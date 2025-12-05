@@ -82,7 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                "Register",
+                "Sign Up",
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -158,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  MyButton(label: "Register", onPressed: () {}),
+                  MyButton(label: "Sign Up", onPressed: () {}),
 
                   const SizedBox(height: 20),
 
@@ -185,7 +185,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(width: 10),
                           const Text(
-                            "Register with Google",
+                            "Sign Up with Google",
                             style: TextStyle(
                               color: Colors.black87,
                               fontSize: 16,
@@ -197,7 +197,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 25),
                   const SizedBox(height: 25),
 
                   Row(
