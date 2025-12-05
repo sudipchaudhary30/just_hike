@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:just_hike/screens/login_screen.dart';
 import 'package:just_hike/widgets/my_button.dart';
 import 'package:just_hike/widgets/my_textfield.dart';
 
@@ -158,7 +159,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  MyButton(label: "Sign Up", onPressed: () {}),
+                  MyButton(
+                    label: "Sign Up",
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
+                  ),
 
                   const SizedBox(height: 20),
 

@@ -170,7 +170,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 10),
 
                   // Sign In button
-                  MyButton(label: "Login In", onPressed: () {}),
+                  MyButton(
+                    label: "Login In",
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      );
+                    },
+                  ),
 
                   const SizedBox(height: 20),
 
