@@ -132,29 +132,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 15),
 
-                  TextFormField(
-                    controller: passwordController,
-                    obscureText: !showPassword,
-                    decoration: InputDecoration(
-                      labelText: "Password",
-                      hintText: "Enter your password",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          showPassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            showPassword = !showPassword;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
+                  
 
                   const SizedBox(height: 20),
 
