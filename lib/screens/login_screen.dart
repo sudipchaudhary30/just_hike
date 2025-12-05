@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_hike/widgets/my_button.dart';
 import 'package:just_hike/widgets/my_textfield.dart';
+import 'package:just_hike/screens/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -209,7 +210,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const Text("Don't have an account?"),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterScreen(),
+                            ),
+                          );
+                        },
                         child: const Text(
                           "Create Account",
                           style: TextStyle(
