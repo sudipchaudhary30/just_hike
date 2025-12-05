@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:just_hike/screens/login_screen.dart';
 import 'home_screen.dart';
 import 'package:just_hike/widgets/my_button.dart' as my_button;
 
@@ -40,7 +41,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void goHome() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 
