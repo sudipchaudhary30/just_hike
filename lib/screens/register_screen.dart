@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:just_hike/screens/login_screen.dart';
 import 'package:just_hike/widgets/my_button.dart';
 import 'package:just_hike/widgets/my_textfield.dart';
 
@@ -82,7 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                "Register",
+                "Sign Up",
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -158,7 +159,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  MyButton(label: "Register", onPressed: () {}),
+                  MyButton(
+                    label: "Sign Up",
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
+                  ),
 
                   const SizedBox(height: 20),
 
@@ -185,7 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(width: 10),
                           const Text(
-                            "Register with Google",
+                            "Sign Up with Google",
                             style: TextStyle(
                               color: Colors.black87,
                               fontSize: 16,

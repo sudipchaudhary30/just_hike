@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:just_hike/screens/home_screen.dart';
 import 'package:just_hike/widgets/my_button.dart';
 import 'package:just_hike/widgets/my_textfield.dart';
 import 'package:just_hike/screens/register_screen.dart';
@@ -139,6 +140,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               : Icons.visibility_off,
                         ),
                         onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HomeScreen(),
+                            ),
+                          );
                           setState(() {
                             showPassword = !showPassword;
                           });
@@ -163,7 +170,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 10),
 
                   // Sign In button
-                  MyButton(label: "Login In", onPressed: () {}),
+                  MyButton(
+                    label: "Login In",
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      );
+                    },
+                  ),
 
                   const SizedBox(height: 20),
 
