@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        '40% Off Summer Escapes',
+                        '60% Off Summer Escapes',
                         style: TextStyle(color: Colors.white70, fontSize: 14),
                       ),
                       const SizedBox(height: 12),
