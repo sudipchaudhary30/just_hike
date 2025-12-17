@@ -30,9 +30,9 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Explore"),
+          BottomNavigationBarItem(icon: Icon(Icons.explore), label: "Explore"),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_sharp),
+            icon: Icon(Icons.backpack),
             label: "My Trips",
           ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
