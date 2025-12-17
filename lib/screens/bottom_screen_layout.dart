@@ -40,6 +40,7 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
 
         selectedItemColor: Color(0xFF00D0B0),
         unselectedItemColor: const Color.fromARGB(255, 30, 122, 121),
+        backgroundColor: Colors.white,
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {
