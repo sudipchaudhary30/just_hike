@@ -108,39 +108,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
               _sectionHeader('Popular Right Now'),
               const SizedBox(height: 12),
+
+              // Popular Right Now horizontal list
               SizedBox(
                 height: 200,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  children: const [
-                    SizedBox(
+                  children: [
+                    _popularTrekCard(
+                      imagePath: 'assets/images/abc_trek2.jpg',
+                      title: 'ABC Trek',
+                      subtitle: '4.9 ★',
+                      description: 'Rs 21000 (4D/5N)',
                       width: 210,
-                      child: SimpleCard(
-                        title: 'ABC Trek',
-                        subtitle: '4.9 ★',
-                        description: 'Rs 21000 (4D/5N)',
-                        imagePath: 'assets/images/abc_trek2.jpg',
-                      ),
                     ),
-                    SizedBox(width: 12),
-                    SizedBox(
+                    const SizedBox(width: 12),
+                    _popularTrekCard(
+                      imagePath: 'assets/images/langtang_valley.jpg',
+                      title: 'Langtang Valley Trek',
+                      subtitle: '4.8 ★',
+                      description: 'Rs 33000 (7D/6N)',
                       width: 220,
-                      child: SimpleCard(
-                        title: 'Langtang Valley Trek',
-                        subtitle: '4.8 ★',
-                        description: 'Rs 33000 (7D/6N)',
-                        imagePath: 'assets/images/langtang_valley.jpg',
-                      ),
                     ),
-                    SizedBox(width: 12),
-                    SizedBox(
+                    const SizedBox(width: 12),
+                    _popularTrekCard(
+                      imagePath: 'assets/images/manaslu_trek.jpg',
+                      title: 'Manaslu Base Camp',
+                      subtitle: '4.8 ★',
+                      description: 'Rs 29000 (6D/5N)',
                       width: 210,
-                      child: SimpleCard(
-                        title: 'Manaslu Base Camp',
-                        subtitle: '4.8 ★',
-                        description: 'Rs 29000 (6D/5N)',
-                        imagePath: 'assets/images/manaslu_trek.jpg',
-                      ),
                     ),
                   ],
                 ),
@@ -174,7 +170,96 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Reusable Card Widget
+  // Popular Right Now Card with Wishlist
+  Widget _popularTrekCard({
+    required String imagePath,
+    required String title,
+    required String subtitle,
+    required String description,
+    required double width,
+  }) {
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Image.asset(
+                  imagePath,
+                  width: width,
+                  height: 120,
+                  fit: BoxFit.cover,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        description,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white70,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.favorite_border,
+                color: Color.fromARGB(255, 16, 191, 185),
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Recommended Treks Card
   Widget _recommendedTrekCard({
     required String imagePath,
     required String title,
@@ -196,7 +281,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          // Image with Wishlist
           Stack(
             children: [
               ClipRRect(
@@ -206,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Image.asset(
                   imagePath,
-                  width: 120,
+                  width: 140,
                   height: 120,
                   fit: BoxFit.cover,
                 ),
@@ -222,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: const Icon(
                     Icons.favorite_border,
-                    color: Color.fromARGB(255, 16, 191, 185),
+                    color: Colors.red,
                     size: 20,
                   ),
                 ),
@@ -230,8 +314,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(width: 12),
-
-          // Texts and Book Button
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -246,8 +328,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  const SizedBox(height: 8),
                   Text(
                     rating,
                     style: const TextStyle(fontSize: 14, color: Colors.grey),
@@ -257,6 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     price,
                     style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
+                  const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () {
                       print('Book $title');
