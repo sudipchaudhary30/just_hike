@@ -306,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: const Icon(
                     Icons.favorite_border,
-                    color: Colors.red,
+                    color: Color.fromARGB(255, 16, 191, 185),
                     size: 20,
                   ),
                 ),
