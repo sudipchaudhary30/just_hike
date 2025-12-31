@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_hike/screens/bottom_screen_layout.dart';
-import 'package:just_hike/widgets/my_button.dart';
-import 'package:just_hike/widgets/my_textfield.dart';
+import 'package:just_hike/core/widgets/my_button.dart';
+import 'package:just_hike/core/widgets/my_textfield.dart';
 import 'package:just_hike/screens/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {

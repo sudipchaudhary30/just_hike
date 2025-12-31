@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:just_hike/widgets/card_widget.dart';
+import 'package:just_hike/core/widgets/card_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
