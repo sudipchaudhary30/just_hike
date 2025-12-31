@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:just_hike/screens/login_screen.dart';
+import 'package:just_hike/features/auth/presentation/pages/login_screen.dart';
 import 'package:just_hike/core/widgets/my_button.dart' as my_button;
 
 class OnboardingScreen extends StatefulWidget {

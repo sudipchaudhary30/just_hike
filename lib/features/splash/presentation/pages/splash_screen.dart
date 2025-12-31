@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'onboarding_screen.dart';
+import '../../../onboarding/presentation/pages/onboarding_screen.dart';
 import 'dart:math';
 
 class _ParticlePainter extends CustomPainter {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:just_hike/screens/bottom_screen_layout.dart';
+import 'package:just_hike/features/dashboard/screens/bottom_screen_layout.dart';
 import 'package:just_hike/core/widgets/my_button.dart';
 import 'package:just_hike/core/widgets/my_textfield.dart';
-import 'package:just_hike/screens/register_screen.dart';
+import 'package:just_hike/features/auth/presentation/pages/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

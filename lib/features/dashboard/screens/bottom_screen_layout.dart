@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:just_hike/screens/bottom_screen/explore_screen.dart';
-import 'package:just_hike/screens/bottom_screen/home_screen.dart';
-import 'package:just_hike/screens/bottom_screen/my_trips_screen.dart';
-import 'package:just_hike/screens/bottom_screen/profile_screen.dart';
+import 'package:just_hike/features/dashboard/screens/bottom_screen/explore_screen.dart';
+import 'package:just_hike/features/dashboard/screens/bottom_screen/home_screen.dart';
+import 'package:just_hike/features/dashboard/screens/bottom_screen/my_trips_screen.dart';
+import 'package:just_hike/features/dashboard/screens/bottom_screen/profile_screen.dart';
 
 class BottomScreenLayout extends StatefulWidget {
   const BottomScreenLayout({super.key});
