@@ -29,10 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             SizedBox(height: 2),
-            Text(
-              'Welcome back',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
+            Text('Welcome', style: TextStyle(fontSize: 14, color: Colors.grey)),
           ],
         ),
         actions: [
