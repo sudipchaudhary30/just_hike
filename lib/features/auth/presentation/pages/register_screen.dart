@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_hike/core/utils/my_snackbar.dart';
 import 'package:just_hike/features/auth/presentation/pages/login_screen.dart';
 import 'package:just_hike/core/widgets/my_button.dart';
 import 'package:just_hike/core/widgets/my_textfield.dart';
+import 'package:just_hike/features/auth/presentation/state/user_auth_state.dart';
+import 'package:just_hike/features/auth/presentation/view_model/user_auth_viewmodel.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -18,7 +22,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool showPassword = false;
 
   @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignup() async {
+    if (_formKey.currentState!.validate()) {
+      ref
+          .read(authViewmodelProvider.notifier)
+          .register(
+            fullName: nameController.text,
+            email: emailController.text,
+            password: passwordController.text,
+          );
+    }
+  }
+
+  final _formKey = GlobalKey<FormState>();
+
+  @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authViewmodelProvider);
+    ref.listen<AuthState>(authViewmodelProvider, (previous, next) {
+      if (next.status == AuthStatus.registered) {
+        showMySnackBar(
+          context: context,
+          message: 'Registration successful! Please login',
+        );
+        // Navigator.of(context).pop();
+        Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (context) => const LoginScreen()),
+        );
+      } else if (next.status == AuthStatus.error) {
+        showMySnackBar(
+          context: context,
+          message: 'Registration failed. Please try again',
+        );
+      }
+    });
     return Scaffold(
       backgroundColor: const Color(0xFF00D0B0),
 
@@ -30,49 +75,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                height: 240,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  image: const DecorationImage(
-                    image: AssetImage("assets/images/onboard1.jpg"),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-
+              child: Form(
+                key: _formKey,
                 child: Container(
-                  padding: const EdgeInsets.all(16),
-                  alignment: Alignment.bottomLeft,
+                  height: 240,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withOpacity(0.6),
-                        Colors.transparent,
-                      ],
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
+                    image: const DecorationImage(
+                      image: AssetImage("assets/images/onboard1.jpg"),
+                      fit: BoxFit.cover,
                     ),
                   ),
 
-                  child: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Shey Phoksundo Lake Trek",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    alignment: Alignment.bottomLeft,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.6),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ),
+                    ),
+
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Shey Phoksundo Lake Trek",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        "40 percent Off Summer Escapes",
-                        style: TextStyle(fontSize: 14, color: Colors.white70),
-                      ),
-                    ],
+                        SizedBox(height: 4),
+                        Text(
+                          "40 percent Off Summer Escapes",
+                          style: TextStyle(fontSize: 14, color: Colors.white70),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -159,9 +207,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  MyButton(label: "Sign Up", onPressed: () {
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                  }),
+                  MyButton(
+                    label: "Sign Up",
+                    // onPressed: () {
+                    //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+                    // }
+                    onPressed: _handleSignup,
+                  ),
 
                   const SizedBox(height: 20),
 
