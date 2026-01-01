@@ -4,7 +4,9 @@ class UserAuthEntity extends Equatable {
   final String? userAuthId;
   final String fullName;
   final String email;
- 
+  final String? password;
+  final String? profilePicture;
+  final String? phoneNumber;
 
 
   const UserAuthEntity({
