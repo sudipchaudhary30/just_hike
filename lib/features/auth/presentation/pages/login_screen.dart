@@ -90,38 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Text(
-                "Start your Adventure today.",
-                style: TextStyle(fontSize: 16, color: Colors.white70),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // White Panel
-            Container(
-              width: double.infinity,
-              height: 600,
-              padding: const EdgeInsets.fromLTRB(20, 25, 20, 40),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-              ),
-
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  MyTextformfield(
-                    labelText: "Email",
-                    hintText: "Enter your email address",
-                    controller: emailController,
-                  ),
-
+           
                   const SizedBox(height: 15),
 
                   TextFormField(
