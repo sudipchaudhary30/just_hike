@@ -1,10 +1,11 @@
 import 'package:hive/hive.dart';
-import 'package:uuid/uuid.dart';
 import 'package:just_hike/core/constants/hive_table_constant.dart';
+import 'package:uuid/uuid.dart';
 import 'package:just_hike/features/auth/domain/entities/user_auth_entity.dart';
 
 part 'user_auth_hive_model.g.dart';
 
+@HiveType(typeId: HiveTableConstant.userAuthTypeId)
 class UserAuthHiveModel extends HiveObject {
   @HiveField(0)
   final String? userAuthId;
@@ -20,15 +21,15 @@ class UserAuthHiveModel extends HiveObject {
   final String? profilePicture;
 
   UserAuthHiveModel({
-    required this.userAuthId,
+    String? userAuthId,
     required this.fullName,
     required this.email,
     required this.phoneNumber,
     required this.password,
     required this.profilePicture,
-  }) : userAuthId = userAuthId ?? Uiid().v4();
+  }) : userAuthId = userAuthId ?? Uuid().v4();
 
-  factory UserAuthHiveModel.formEntity(UserAuthEntity entity) {
+  factory UserAuthHiveModel.fromEntity(UserAuthEntity entity) {
     return UserAuthHiveModel(
       userAuthId: entity.userAuthId,
       fullName: entity.fullName,
@@ -36,6 +37,17 @@ class UserAuthHiveModel extends HiveObject {
       phoneNumber: entity.phoneNumber,
       password: entity.password,
       profilePicture: entity.profilePicture,
+    );
+  }
+
+  UserAuthEntity toEntity() {
+    return UserAuthEntity(
+      userAuthId: userAuthId,
+      fullName: fullName, 
+      email: email,
+      phoneNumber: phoneNumber,
+      password: password,
+      profilePicture: profilePicture,
     );
   }
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'User_auth_hive_model.dart';
+part of 'user_auth_hive_model.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
@@ -17,7 +17,7 @@ class UserAuthHiveModelAdapter extends TypeAdapter<UserAuthHiveModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return UserAuthHiveModel(
-      UserAuthId: fields[0] as String?,
+      userAuthId: fields[0] as String?,
       fullName: fields[1] as String,
       email: fields[2] as String,
       phoneNumber: fields[3] as String?,
@@ -31,7 +31,7 @@ class UserAuthHiveModelAdapter extends TypeAdapter<UserAuthHiveModel> {
     writer
       ..writeByte(6)
       ..writeByte(0)
-      ..write(obj.UserAuthId)
+      ..write(obj.userAuthId)
       ..writeByte(1)
       ..write(obj.fullName)
       ..writeByte(2)
