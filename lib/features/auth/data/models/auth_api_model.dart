@@ -8,14 +8,7 @@ class AuthApiModel {
   final String? profilePicture;
   final String? phoneNumber;
 
-  AuthApiModel({
-    this.userAuthId,
-    required this.fullName,
-    required this.email,
-    this.password,
-    this.profilePicture,
-    this.phoneNumber,
-  });
+
 
   //toJSon
   Map<String, dynamic> toJson() {
