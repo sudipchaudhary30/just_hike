@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:just_hike/core/widgets/card_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -9,10 +8,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -43,15 +45,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 110,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Banner
               Container(
-                height: 180,
+                height: 200,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -101,14 +108,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
 
+              const SizedBox(height: 24),
               _sectionHeader('Popular Right Now'),
               const SizedBox(height: 12),
 
-              // Popular Right Now horizontal list
               SizedBox(
-                height: 200,
+                height: 220,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
@@ -127,47 +133,64 @@ class _HomeScreenState extends State<HomeScreen> {
                       description: 'Rs 33000 (7D/6N)',
                       width: 220,
                     ),
-                    const SizedBox(width: 12),
-                    _popularTrekCard(
-                      imagePath: 'assets/images/manaslu_trek.jpg',
-                      title: 'Manaslu Base Camp',
-                      subtitle: '4.8 ★',
-                      description: 'Rs 29000 (6D/5N)',
-                      width: 210,
-                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
 
+              const SizedBox(height: 24),
               _sectionHeader('Recommended for You'),
               const SizedBox(height: 12),
 
-              // Recommended Treks
-              Column(
-                children: [
-                  _recommendedTrekCard(
-                    imagePath: 'assets/images/poon_hill_trek.jpg',
-                    title: 'Poon Hill Trek',
-                    rating: '4.9 ★',
-                    price: 'Rs 12000 (3D/2N)',
-                  ),
-                  _recommendedTrekCard(
-                    imagePath: 'assets/images/ruby_valley.jpg',
-                    title: 'Ruby Valley Trek',
-                    rating: '4.7 ★',
-                    price: 'Rs 18000 (4D/5N)',
-                  ),
-                ],
+              _recommendedTrekCard(
+                imagePath: 'assets/images/poon_hill_trek.jpg',
+                title: 'Poon Hill Trek',
+                rating: '4.9 ★',
+                price: 'Rs 12000 (3D/2N)',
+              ),
+
+              _recommendedTrekCard(
+                imagePath: 'assets/images/ruby_valley.jpg',
+                title: 'Ruby Valley Trek',
+                rating: '4.7 ★',
+                price: 'Rs 18000 (4D/5N)',
               ),
             ],
           ),
         ),
       ),
+
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF00D0B0),
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore_outlined),
+            label: 'Explore',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_border),
+            label: 'Saved',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 
-  // Popular Right Now Card with Wishlist
   Widget _popularTrekCard({
     required String imagePath,
     required String title,
@@ -188,67 +211,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
+            child: Image.asset(
+              imagePath,
+              height: 130,
+              width: width,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.asset(
-                  imagePath,
-                  width: width,
-                  height: 120,
-                  fit: BoxFit.cover,
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        description,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 4),
+                Text(subtitle, style: const TextStyle(color: Colors.grey)),
+                Text(description, style: const TextStyle(color: Colors.grey)),
               ],
-            ),
-          ),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white70,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.favorite_border,
-                color: Color.fromARGB(255, 16, 191, 185),
-                size: 20,
-              ),
             ),
           ),
         ],
@@ -256,7 +243,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Recommended Treks Card
   Widget _recommendedTrekCard({
     required String imagePath,
     required String title,
@@ -265,6 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Colors.white,
@@ -278,81 +265,28 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-                child: Image.asset(
-                  imagePath,
-                  width: 140,
-                  height: 120,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white70,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.favorite_border,
-                    color: Color.fromARGB(255, 16, 191, 185),
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              imagePath,
+              width: 120,
+              height: 110,
+              fit: BoxFit.cover,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    rating,
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    price,
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      print('Book $title');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00D0B0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      minimumSize: const Size(double.infinity, 36),
-                    ),
-                    child: const Text(
-                      'Book',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Text(rating, style: const TextStyle(color: Colors.grey)),
+                Text(price, style: const TextStyle(color: Colors.grey)),
+              ],
             ),
           ),
         ],
@@ -372,4 +306,5 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+  
 }

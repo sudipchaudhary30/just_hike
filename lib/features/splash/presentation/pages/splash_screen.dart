@@ -1,7 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_hike/core/services/storage/user_session_service.dart';
+import 'package:just_hike/features/dashboard/screens/bottom_screen/home_screen.dart';
 import '../../../onboarding/presentation/pages/onboarding_screen.dart';
 import 'dart:math';
+// Add your Dashboard import if needed
+// import 'package:just_hike/features/dashboard/presentation/pages/dashboard.dart';
 
 class _ParticlePainter extends CustomPainter {
   final List<Offset> particles;
@@ -22,19 +27,19 @@ class _ParticlePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _logoController;
   late Animation<double> _logoJumpAnimation;
   late Animation<double> _logoRotateAnimation;
-  late Timer _timer;
+  Timer? _timer;
 
   final Random _random = Random();
   final List<Offset> _particles = [];
@@ -48,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen>
       _particles.add(Offset(_random.nextDouble(), _random.nextDouble()));
     }
 
-    // Logo controller for jumping
+    // Logo animation controller
     _logoController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -77,21 +82,32 @@ class _SplashScreenState extends State<SplashScreen>
 
     _logoController.repeat(reverse: true);
 
-    // Navigate after 4 seconds
-    _timer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
-      }
-    });
+    // Navigate after 3 seconds
+    _timer = Timer(const Duration(seconds: 3), _navigateToNext);
+  }
+
+  void _navigateToNext() {
+    if (!mounted) return;
+
+    // Get user session
+    final sessionService = ref.read(UserSessionServiceProvider);
+    final isLoggedIn = sessionService.isLoggedIn();
+
+    // Choose next page
+    final nextPage = isLoggedIn
+        ? const HomeScreen() 
+        : const HomeScreen();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => nextPage),
+    );
   }
 
   @override
   void dispose() {
     _logoController.dispose();
-    _timer.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
