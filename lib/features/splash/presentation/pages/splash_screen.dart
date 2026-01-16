@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_hike/core/services/storage/user_session_service.dart';
 import 'package:just_hike/features/dashboard/screens/bottom_screen/home_screen.dart';
+import 'package:just_hike/features/dashboard/screens/bottom_screen_layout.dart';
 import '../../../onboarding/presentation/pages/onboarding_screen.dart';
 import 'dart:math';
 // Add your Dashboard import if needed
@@ -95,8 +96,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     // Choose next page
     final nextPage = isLoggedIn
-        ? const HomeScreen() 
-        : const HomeScreen();
+        ? const BottomScreenLayout()
+        : const BottomScreenLayout();
 
     Navigator.pushReplacement(
       context,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:just_hike/core/widgets/my_button.dart';
+import 'package:just_hike/features/auth/presentation/pages/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -10,6 +12,19 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(child: Center(child: Text("Profile")));
+    return Column(
+      children: [
+        const SizedBox(height: 90),
+        MyButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          },
+          label: 'logout',
+        ),
+      ],
+    );
   }
 }
