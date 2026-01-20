@@ -14,7 +14,12 @@ class BottomScreenLayout extends StatefulWidget {
 class _BottomScreenLayoutState extends State<BottomScreenLayout> {
   int _selectedIndex = 0;
 
-  
+  List<Widget> lstBottomScreen = [
+    const HomeScreen(),
+    const ExploreScreen(),
+    const MyTripsScreen(),
+    const ProfileScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
