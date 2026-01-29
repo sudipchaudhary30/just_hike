@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:just_hike/features/auth/data/models/auth_api_model.dart';
 import 'package:just_hike/features/auth/data/models/user_auth_hive_model.dart';
 
@@ -16,4 +17,10 @@ abstract interface class IAuthRemoteDataSource {
   Future<AuthApiModel> register(AuthApiModel user);
   Future<AuthApiModel?> login(String email, String password);
   Future<AuthApiModel?> getUserById(String authId);
+  Future<AuthApiModel?> updateProfile({
+    required String fullName,
+    required String email,
+    required String phoneNumber,
+    File? profileImage,
+  });
 }
