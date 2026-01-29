@@ -148,9 +148,7 @@ class _AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     // Skip auth for public endpoints
-    final publicEndpoints = [
-      ApiEndpoints.userLogin,
-    ];
+    final publicEndpoints = [ApiEndpoints.userLogin];
 
     final isPublicGet =
         options.method == 'GET' &&
@@ -164,7 +162,18 @@ class _AuthInterceptor extends Interceptor {
       final token = await _storage.read(key: _tokenKey);
       if (token != null) {
         options.headers['Authorization'] = 'Bearer $token';
+        print('Auth token added to request: ${options.path}');
+        print(
+          'Token preview: ${token.substring(0, token.length > 30 ? 30 : token.length)}...',
+        );
+        print(
+          'Full Authorization header: Bearer ${token.substring(0, token.length > 30 ? 30 : token.length)}...',
+        );
+      } else {
+        print('Warning: No auth token found for request: ${options.path}');
       }
+    } else {
+      print('Skipping auth for: ${options.path}');
     }
 
     handler.next(options);

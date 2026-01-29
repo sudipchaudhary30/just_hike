@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_hike/core/utils/my_snackbar.dart';
 import 'package:just_hike/features/auth/presentation/state/user_auth_state.dart';
 import 'package:just_hike/features/auth/presentation/view_model/user_auth_viewmodel.dart';
-import 'package:just_hike/features/dashboard/screens/bottom_screen_layout.dart';
+import 'package:just_hike/features/dashboard/presentation/screens/bottom_screen_layout.dart';
 import 'package:just_hike/core/widgets/my_button.dart';
 import 'package:just_hike/core/widgets/my_textfield.dart';
 import 'package:just_hike/features/auth/presentation/pages/register_screen.dart';
@@ -27,19 +27,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     passwordController.dispose();
     super.dispose();
   }
+
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState?.validate() ?? false) {
       await ref
-        .read(authViewmodelProvider.notifier)
-        .login(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim(),
-        );
+          .read(authViewmodelProvider.notifier)
+          .login(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
     }
   }
+
   @override
   Widget build(BuildContext context) {
-
     // () {
     //                     Navigator.pushReplacement(
     //                       context,
@@ -72,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 60),
-          
+
               // Top Card Image
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -121,9 +122,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
-          
+
               const SizedBox(height: 20),
-          
+
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
@@ -135,7 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
-          
+
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 child: Text(
@@ -143,9 +144,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: TextStyle(fontSize: 16, color: Colors.white70),
                 ),
               ),
-          
+
               const SizedBox(height: 20),
-          
+
               // White Panel
               Container(
                 width: double.infinity,
@@ -158,7 +159,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     topRight: Radius.circular(30),
                   ),
                 ),
-          
+
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -167,9 +168,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       hintText: "Enter your email address",
                       controller: emailController,
                     ),
-          
+
                     const SizedBox(height: 15),
-          
+
                     TextFormField(
                       controller: passwordController,
                       obscureText: !showPassword,
@@ -186,12 +187,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 : Icons.visibility_off,
                           ),
                           onPressed: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const BottomScreenLayout(),
-                              ),
-                            );
                             setState(() {
                               showPassword = !showPassword;
                             });
@@ -199,9 +194,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-          
+
                     const SizedBox(height: 10),
-          
+
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
@@ -212,17 +207,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-          
+
                     const SizedBox(height: 10),
-          
+
                     // Sign In button
-                    MyButton(
-                      label: "Log in",
-                      onPressed: _handleLogin,
-                    ),
-          
+                    MyButton(label: "Log in", onPressed: _handleLogin),
+
                     const SizedBox(height: 20),
-          
+
                     // Google Login Button
                     SizedBox(
                       width: double.infinity,
@@ -258,9 +250,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-          
+
                     const SizedBox(height: 25),
-          
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
