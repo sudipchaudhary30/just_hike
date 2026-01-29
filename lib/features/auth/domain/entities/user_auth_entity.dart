@@ -8,16 +8,22 @@ class UserAuthEntity extends Equatable {
   final String? profilePicture;
   final String? phoneNumber;
 
-
   const UserAuthEntity({
     this.userAuthId,
     required this.fullName,
     required this.email,
-    this.password, 
-    this.profilePicture, 
+    this.password,
+    this.profilePicture,
     this.phoneNumber,
   });
 
   @override
-  List<Object?> get props => [userAuthId, fullName, email, password];
+  List<Object?> get props => [
+    userAuthId,
+    fullName,
+    email,
+    password,
+    profilePicture,
+    phoneNumber,
+  ];
 }
