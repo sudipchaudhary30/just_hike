@@ -24,6 +24,7 @@ class UserSessionService {
   static const String _keyUserFullName = 'user_full_name';
   static const String _keyUserPhoneNumber = 'user_phone_number';
   static const String _keyUserProfileImage = "user_profile_image";
+  static const String _keyAuthToken = 'auth_token';
 
   //store user session data
 
@@ -33,6 +34,7 @@ class UserSessionService {
     required String fullName,
     String? phoneNumber,
     String? profileImage,
+    String? authToken,
   }) async {
     await _prefs.setBool(_keyIsLoggedIn, true);
     await _prefs.setString(_KeyUserId, userId);
@@ -45,6 +47,10 @@ class UserSessionService {
     if (profileImage != null) {
       await _prefs.setString(_keyUserProfileImage, profileImage);
     }
+
+    if (authToken != null) {
+      await _prefs.setString(_keyAuthToken, authToken);
+    }
   }
 
   // Clear user session data
@@ -56,6 +62,7 @@ class UserSessionService {
     await _prefs.remove(UserSessionService._keyIsLoggedIn);
     await _prefs.remove(_keyUserFullName);
     await _prefs.remove(_keyUserProfileImage);
+    await _prefs.remove(_keyAuthToken);
   }
 
   bool isLoggedIn() {
@@ -76,5 +83,9 @@ class UserSessionService {
 
   String? getUserProfileImage() {
     return _prefs.getString(_keyUserProfileImage);
+  }
+
+  String? getAuthToken() {
+    return _prefs.getString(_keyAuthToken);
   }
 }
