@@ -7,6 +7,7 @@ class AuthApiModel {
   final String? password;
   final String? profilePicture;
   final String? phoneNumber;
+  final String? token;
 
   AuthApiModel({
     this.userAuthId,
@@ -15,6 +16,7 @@ class AuthApiModel {
     this.password,
     this.profilePicture,
     this.phoneNumber,
+    this.token,
   });
 
   //toJSon
@@ -32,12 +34,13 @@ class AuthApiModel {
   //fromJson
   factory AuthApiModel.fromJson(Map<String, dynamic> json) {
     return AuthApiModel(
-      userAuthId: json["_id"] as String?,
+      userAuthId: (json["_id"] ?? json["id"]) as String?,
       fullName: json["name"] as String,
       email: json["email"] as String,
       password: json["password"] as String?,
       profilePicture: json["profilePicture"] as String?,
       phoneNumber: json["phoneNumber"] as String?,
+      token: json["token"] as String?,
     );
   }
 
