@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_hike/core/api/api_endpoints.dart';
+import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart';
+import 'package:just_hike/features/dashboard/presentation/providers/packages_provider.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final packagesState = ref.watch(allPackagesProvider);
 
-class _HomeScreenState extends State<HomeScreen> {
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -48,104 +48,70 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Banner
-              Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/trek_banner.jpg'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    color: Colors.black.withOpacity(0.1),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Shey Phoksundo Lake Trek',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        '40% Off Summer Escapes',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00D0B0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          'Explore Now',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
+              // Banner - Use first package if available
+              if (packagesState.packages.isNotEmpty)
+                _buildBanner(packagesState.packages.first)
+              else
+                _buildDefaultBanner(),
               const SizedBox(height: 24),
               _sectionHeader('Popular Right Now'),
               const SizedBox(height: 12),
-
-              SizedBox(
-                height: 220,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _popularTrekCard(
-                      imagePath: 'assets/images/abc_trek2.jpg',
-                      title: 'ABC Trek',
-                      subtitle: '4.9 ★',
-                      description: 'Rs 21000 (4D/5N)',
-                      width: 210,
+              if (packagesState.isLoading)
+                const SizedBox(
+                  height: 220,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFF00D0B0)),
                     ),
-                    const SizedBox(width: 12),
-                    _popularTrekCard(
-                      imagePath: 'assets/images/langtang_valley.jpg',
-                      title: 'Langtang Valley Trek',
-                      subtitle: '4.8 ★',
-                      description: 'Rs 33000 (7D/6N)',
-                      width: 220,
-                    ),
-                  ],
+                  ),
+                )
+              else if (packagesState.errorMessage != null)
+                SizedBox(
+                  height: 220,
+                  child: Center(
+                    child: Text('Error: ${packagesState.errorMessage}'),
+                  ),
+                )
+              else if (packagesState.packages.isEmpty)
+                const SizedBox(
+                  height: 220,
+                  child: Center(
+                    child: Text('No packages available'),
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 220,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      ...packagesState.packages.take(2).map((pkg) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: _popularTrekCard(pkg),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              ),
-
               const SizedBox(height: 24),
               _sectionHeader('Recommended for You'),
               const SizedBox(height: 12),
-
-              _recommendedTrekCard(
-                imagePath: 'assets/images/poon_hill_trek.jpg',
-                title: 'Poon Hill Trek',
-                rating: '4.9 ★',
-                price: 'Rs 12000 (3D/2N)',
-              ),
-
-              _recommendedTrekCard(
-                imagePath: 'assets/images/ruby_valley.jpg',
-                title: 'Ruby Valley Trek',
-                rating: '4.7 ★',
-                price: 'Rs 18000 (4D/5N)',
-              ),
+              if (packagesState.isLoading)
+                const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D0B0)),
+                  ),
+                )
+              else if (packagesState.errorMessage != null)
+                Text('Error: ${packagesState.errorMessage}')
+              else if (packagesState.packages.isEmpty)
+                const Text('No packages available')
+              else
+                ...packagesState.packages.skip(2).take(3).map(
+                      (pkg) => _recommendedTrekCard(pkg),
+                    ),
             ],
           ),
         ),
@@ -153,15 +119,126 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _popularTrekCard({
-    required String imagePath,
-    required String title,
-    required String subtitle,
-    required String description,
-    required double width,
-  }) {
+  Widget _buildDefaultBanner() {
     return Container(
-      width: width,
+      height: 200,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/trek_banner.jpg'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.black.withOpacity(0.1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            const Text(
+              'Explore Our Treks',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Discover amazing mountain adventures',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D0B0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Explore Now',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBanner(PackageEntity package) {
+    final imageUrl = package.banner ?? package.imageUrl ?? '';
+
+    return Container(
+      height: 200,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        image: imageUrl.startsWith('http')
+            ? DecorationImage(
+                image: NetworkImage(imageUrl),
+                fit: BoxFit.cover,
+              )
+            : const DecorationImage(
+                image: AssetImage('assets/images/trek_banner.jpg'),
+                fit: BoxFit.cover,
+              ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.black.withOpacity(0.1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              package.title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${package.location} • Rs ${package.price.toStringAsFixed(0)}',
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D0B0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Explore Now',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _popularTrekCard(PackageEntity package) {
+    final imageUrl = package.imageUrl ?? '';
+
+    return Container(
+      width: 210,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Colors.white,
@@ -178,12 +255,27 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              imagePath,
-              height: 130,
-              width: width,
-              fit: BoxFit.cover,
-            ),
+            child: imageUrl.startsWith('http')
+                ? Image.network(
+                    imageUrl,
+                    height: 130,
+                    width: 210,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 130,
+                        width: 210,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image),
+                      );
+                    },
+                  )
+                : Container(
+                    height: 130,
+                    width: 210,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image),
+                  ),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
@@ -191,12 +283,18 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  package.title,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.grey)),
-                Text(description, style: const TextStyle(color: Colors.grey)),
+                Text('${package.rating.toStringAsFixed(1)} ★',
+                    style: const TextStyle(color: Colors.grey)),
+                Text('Rs ${package.price.toStringAsFixed(0)} (${package.daysCount}D/${package.nightsCount}N)',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    )),
               ],
             ),
           ),
@@ -205,12 +303,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _recommendedTrekCard({
-    required String imagePath,
-    required String title,
-    required String rating,
-    required String price,
-  }) {
+  Widget _recommendedTrekCard(PackageEntity package) {
+    final imageUrl = package.imageUrl ?? '';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -229,12 +324,27 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              imagePath,
-              width: 120,
-              height: 110,
-              fit: BoxFit.cover,
-            ),
+            child: imageUrl.startsWith('http')
+                ? Image.network(
+                    imageUrl,
+                    width: 120,
+                    height: 110,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 120,
+                        height: 110,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image),
+                      );
+                    },
+                  )
+                : Container(
+                    width: 120,
+                    height: 110,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image),
+                  ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -242,12 +352,19 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  package.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
-                Text(rating, style: const TextStyle(color: Colors.grey)),
-                Text(price, style: const TextStyle(color: Colors.grey)),
+                Text('${package.rating.toStringAsFixed(1)} ★',
+                    style: const TextStyle(color: Colors.grey)),
+                Text('Rs ${package.price.toStringAsFixed(0)} (${package.daysCount}D/${package.nightsCount}N)',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    )),
               ],
             ),
           ),

@@ -65,7 +65,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     '$profilePicture-$_imageCacheBuster',
                                   ),
                                   imageUrl:
-                                      '${ApiEndpoints.getImageUrl(profilePicture)}?v=$_imageCacheBuster',
+                                      '${ApiEndpoints.profilePicture(profilePicture)}?v=$_imageCacheBuster',
                                   fit: BoxFit.cover,
                                   placeholder: (context, url) => const Center(
                                     child: CircularProgressIndicator(

@@ -40,7 +40,7 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
           BottomNavigationBarItem(icon: Icon(Icons.explore), label: "Explore"),
           BottomNavigationBarItem(
             icon: Icon(Icons.backpack),
-            label: "My Trips",
+            label: "My Treks",
           ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],

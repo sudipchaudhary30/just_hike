@@ -99,8 +99,16 @@ class _EditprofileState extends ConsumerState<Editprofile> {
         );
 
         if (image != null) {
+          // Copy image to persistent location to avoid cache cleanup
+          final bytes = await image.readAsBytes();
+          final tempDir = Directory.systemTemp;
+          final fileName =
+              'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          final file = File('${tempDir.path}/$fileName');
+          await file.writeAsBytes(bytes);
+
           setState(() {
-            _selectedImage = File(image.path);
+            _selectedImage = file;
           });
         }
       } catch (e) {
@@ -163,6 +171,17 @@ class _EditprofileState extends ConsumerState<Editprofile> {
 
   Future<void> _saveProfile() async {
     if (_formKey.currentState?.validate() ?? false) {
+      // Verify image file exists before upload
+      if (_selectedImage != null && !await _selectedImage!.exists()) {
+        if (mounted) {
+          showMySnackBar(
+            context: context,
+            message: 'Selected image no longer exists. Please select again.',
+          );
+        }
+        return;
+      }
+
       // Call viewmodel to update profile
       await ref
           .read(authViewmodelProvider.notifier)
@@ -267,7 +286,7 @@ class _EditprofileState extends ConsumerState<Editprofile> {
                                         authState.authEntity!.profilePicture!,
                                       ),
                                       imageUrl:
-                                          '${ApiEndpoints.getImageUrl(authState.authEntity!.profilePicture!)}?v=$_imageCacheBuster',
+                                          '${ApiEndpoints.profilePicture(authState.authEntity!.profilePicture!)}?v=$_imageCacheBuster',
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) =>
                                           const Center(

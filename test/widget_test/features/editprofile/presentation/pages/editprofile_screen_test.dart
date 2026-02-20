@@ -8,7 +8,7 @@ import 'package:just_hike/features/editprofile/presentation/pages/editprofile_sc
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Mock class
+
 class MockSharedPreferences extends Mock implements SharedPreferences {}
 
 // Test Notifier for AuthViewmodel
@@ -63,10 +63,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Check for all text fields
     expect(find.byType(TextFormField), findsNWidgets(4));
 
-    // Verify labels
     expect(find.text('Full Name'), findsOneWidget);
     expect(find.text('Email'), findsOneWidget);
     expect(find.text('Phone Number'), findsOneWidget);
@@ -105,10 +103,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Find the name text field (first TextFormField)
     final nameField = find.byType(TextFormField).first;
 
-    // Clear and enter new text
     await tester.enterText(nameField, 'Sudip Ch');
     await tester.pumpAndSettle();
 
@@ -129,10 +125,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Check for change profile picture text
     expect(find.text('Change Profile Picture'), findsOneWidget);
 
-    // Check for camera icon in the profile section
     expect(find.byIcon(Icons.camera_alt), findsWidgets);
   });
 }

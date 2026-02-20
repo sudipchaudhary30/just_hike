@@ -147,36 +147,26 @@ class _AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Skip auth for public endpoints
-    final publicEndpoints = [ApiEndpoints.userLogin];
+    try {
+      final path = options.path;
+      final method = options.method.toUpperCase();
 
-    final isPublicGet =
-        options.method == 'GET' &&
-        publicEndpoints.any((endpoint) => options.path.startsWith(endpoint));
+      final isPublic =
+          (method == 'GET' && path.contains('/treks')) ||
+          path.contains(ApiEndpoints.userLogin) ||
+          path.contains(ApiEndpoints.userRegister);
 
-    final isAuthEndpoint =
-        options.path == ApiEndpoints.userLogin ||
-        options.path == ApiEndpoints.user;
-
-    if (!isPublicGet && !isAuthEndpoint) {
-      final token = await _storage.read(key: _tokenKey);
-      if (token != null) {
-        options.headers['Authorization'] = 'Bearer $token';
-        print('Auth token added to request: ${options.path}');
-        print(
-          'Token preview: ${token.substring(0, token.length > 30 ? 30 : token.length)}...',
-        );
-        print(
-          'Full Authorization header: Bearer ${token.substring(0, token.length > 30 ? 30 : token.length)}...',
-        );
-      } else {
-        print('Warning: No auth token found for request: ${options.path}');
+      if (!isPublic) {
+        final token = await _storage.read(key: _tokenKey);
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
       }
-    } else {
-      print('Skipping auth for: ${options.path}');
-    }
 
-    handler.next(options);
+      handler.next(options);
+    } catch (_) {
+      handler.next(options);
+    }
   }
 
   @override
@@ -190,3 +180,177 @@ class _AuthInterceptor extends Interceptor {
     handler.next(err);
   }
 }
+
+// import 'package:dio/dio.dart';
+// import 'package:dio_smart_retry/dio_smart_retry.dart';
+// import 'package:flutter/foundation.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+// import 'package:just_hike/core/api/api_endpoints.dart';
+// import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+
+// final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
+
+// class ApiClient {
+//   late final Dio _dio;
+
+//   ApiClient() {
+//     _dio = Dio(
+//       BaseOptions(
+//         baseUrl: ApiEndpoints.baseUrl,
+//         connectTimeout: ApiEndpoints.connectionTimeout,
+//         receiveTimeout: ApiEndpoints.receiveTimeout,
+//         headers: const {
+//           'Content-Type': 'application/json',
+//           'Accept': 'application/json',
+//         },
+//       ),
+//     );
+
+//     _dio.interceptors.add(_AuthInterceptor());
+
+//     _dio.interceptors.add(
+//       RetryInterceptor(
+//         dio: _dio,
+//         retries: 3,
+//         retryDelays: const [
+//           Duration(seconds: 1),
+//           Duration(seconds: 2),
+//           Duration(seconds: 3),
+//         ],
+//         retryEvaluator: (error, attempt) {
+//           return error.type == DioExceptionType.connectionTimeout ||
+//               error.type == DioExceptionType.sendTimeout ||
+//               error.type == DioExceptionType.receiveTimeout ||
+//               error.type == DioExceptionType.connectionError;
+//         },
+//       ),
+//     );
+
+//     if (kDebugMode) {
+//       _dio.interceptors.add(
+//         PrettyDioLogger(
+//           requestHeader: true,
+//           requestBody: true,
+//           responseBody: true,
+//           responseHeader: false,
+//           error: true,
+//           compact: true,
+//         ),
+//       );
+//     }
+//   }
+
+//   Dio get dio => _dio;
+
+//   Future<Response> get(
+//     String path, {
+//     Map<String, dynamic>? queryParameters,
+//     Options? options,
+//   }) {
+//     return _dio.get(path, queryParameters: queryParameters, options: options);
+//   }
+
+//   Future<Response> post(
+//     String path, {
+//     dynamic data,
+//     Map<String, dynamic>? queryParameters,
+//     Options? options,
+//   }) {
+//     return _dio.post(
+//       path,
+//       data: data,
+//       queryParameters: queryParameters,
+//       options: options,
+//     );
+//   }
+
+//   Future<Response> put(
+//     String path, {
+//     dynamic data,
+//     Map<String, dynamic>? queryParameters,
+//     Options? options,
+//   }) {
+//     return _dio.put(
+//       path,
+//       data: data,
+//       queryParameters: queryParameters,
+//       options: options,
+//     );
+//   }
+
+//   Future<Response> delete(
+//     String path, {
+//     dynamic data,
+//     Map<String, dynamic>? queryParameters,
+//     Options? options,
+//   }) {
+//     return _dio.delete(
+//       path,
+//       data: data,
+//       queryParameters: queryParameters,
+//       options: options,
+//     );
+//   }
+
+//   Future<Response> uploadFile(
+//     String path, {
+//     required FormData formData,
+//     Options? options,
+//     ProgressCallback? onSendProgress,
+//   }) {
+//     return _dio.post(
+//       path,
+//       data: formData,
+//       options: options,
+//       onSendProgress: onSendProgress,
+//     );
+//   }
+// }
+
+// class _AuthInterceptor extends Interceptor {
+//   final _storage = const FlutterSecureStorage();
+//   static const String _tokenKey = 'auth_token';
+
+//   bool _isPublic(RequestOptions options) {
+//     final path = options.path;
+//     final method = options.method.toUpperCase();
+
+//     // Public auth routes
+//     if (path.contains(ApiEndpoints.login) ||
+//         path.contains(ApiEndpoints.register)) {
+//       return true;
+//     }
+
+//     // Public trek reads
+//     if (method == 'GET' && path.contains('/treks')) {
+//       return true;
+//     }
+
+//     return false;
+//   }
+
+//   @override
+//   void onRequest(
+//     RequestOptions options,
+//     RequestInterceptorHandler handler,
+//   ) async {
+//     try {
+//       if (!_isPublic(options)) {
+//         final token = await _storage.read(key: _tokenKey);
+//         if (token != null && token.isNotEmpty) {
+//           options.headers['Authorization'] = 'Bearer $token';
+//         }
+//       }
+//     } catch (_) {}
+//     handler.next(options);
+//   }
+
+//   @override
+//   void onError(DioException err, ErrorInterceptorHandler handler) async {
+//     if (err.response?.statusCode == 401) {
+//       await _storage.delete(key: _tokenKey);
+//     }
+//     handler.next(err);
+//   }
+// }

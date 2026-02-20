@@ -36,6 +36,18 @@ class AuthRepository implements IAuthRepository {
   }) : _authDataSource = authDataSource,
        _authRemoteDataSource = authRemoteDataSource,
        _networkInfo = networkInfo;
+
+  String _dioMessage(DioException e, String fallback) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic> && data['message'] is String) {
+      return data['message'] as String;
+    }
+    if (data is String && data.isNotEmpty) {
+      return data;
+    }
+    return fallback;
+  }
+
   @override
   Future<Either<Failure, UserAuthEntity>> getCurrentUser() async {
     try {
@@ -66,7 +78,7 @@ class AuthRepository implements IAuthRepository {
       } on DioException catch (e) {
         return Left(
           ApiFailure(
-            message: e.response?.data['message'] ?? 'Login Failed',
+            message: _dioMessage(e, 'Login Failed'),
             statuscode: e.response?.statusCode,
           ),
         );
@@ -104,8 +116,7 @@ class AuthRepository implements IAuthRepository {
 
   @override
   Future<Either<Failure, bool>> register(UserAuthEntity user) async {
-   if (await _networkInfo.isConnected) {
-      // go to remote
+    if (await _networkInfo.isConnected) {
       try {
         final apiModel = AuthApiModel.fromEntity(user);
         await _authRemoteDataSource.register(apiModel);
@@ -113,7 +124,7 @@ class AuthRepository implements IAuthRepository {
       } on DioException catch (e) {
         return Left(
           ApiFailure(
-            message: e.response?.data['message'] ?? 'Registration Failed',
+            message: _dioMessage(e, 'Registration Failed'),
             statuscode: e.response?.statusCode,
           ),
         );
@@ -128,7 +139,7 @@ class AuthRepository implements IAuthRepository {
             LocalDatabaseFailure(message: "Email already registered"),
           );
         }
- 
+
         final authModel = UserAuthHiveModel(
           fullName: user.fullName,
           email: user.email,
@@ -144,41 +155,41 @@ class AuthRepository implements IAuthRepository {
     }
   }
 
-    @override
-    Future<Either<Failure, UserAuthEntity>> updateProfile({
-      required String fullName,
-      required String email,
-      required String phoneNumber,
-      File? profileImage,
-    }) async {
-      if (await _networkInfo.isConnected) {
-        try {
-          final updatedUser = await _authRemoteDataSource.updateProfile(
-            fullName: fullName,
-            email: email,
-            phoneNumber: phoneNumber,
-            profileImage: profileImage,
-          );
-  
-          if (updatedUser != null) {
-            final entity = updatedUser.toEntity();
-            return Right(entity);
-          }
-          return const Left(ApiFailure(message: 'Failed to update profile'));
-        } on DioException catch (e) {
-          return Left(
-            ApiFailure(
-              message: e.response?.data['message'] ?? 'Update Failed',
-              statuscode: e.response?.statusCode,
-            ),
-          );
-        } catch (e) {
-          return Left(ApiFailure(message: e.toString()));
-        }
-      } else {
-        return const Left(
-          LocalDatabaseFailure(message: 'No internet connection'),
+  @override
+  Future<Either<Failure, UserAuthEntity>> updateProfile({
+    required String fullName,
+    required String email,
+    required String phoneNumber,
+    File? profileImage,
+  }) async {
+    if (await _networkInfo.isConnected) {
+      try {
+        final updatedUser = await _authRemoteDataSource.updateProfile(
+          fullName: fullName,
+          email: email,
+          phoneNumber: phoneNumber,
+          profileImage: profileImage,
         );
+
+        if (updatedUser != null) {
+          final entity = updatedUser.toEntity();
+          return Right(entity);
+        }
+        return const Left(ApiFailure(message: 'Failed to update profile'));
+      } on DioException catch (e) {
+        return Left(
+          ApiFailure(
+            message: _dioMessage(e, 'Update Failed'),
+            statuscode: e.response?.statusCode,
+          ),
+        );
+      } catch (e) {
+        return Left(ApiFailure(message: e.toString()));
       }
+    } else {
+      return const Left(
+        LocalDatabaseFailure(message: 'No internet connection'),
+      );
     }
   }
+}
