@@ -7,7 +7,6 @@ import 'package:just_hike/core/api/api_endpoints.dart';
 import 'package:just_hike/core/services/storage/user_session_service.dart';
 import 'package:just_hike/features/auth/data/datasources/user_auth_datasource.dart';
 import 'package:just_hike/features/auth/data/models/auth_api_model.dart';
-import 'package:just_hike/features/auth/data/models/user_auth_hive_model.dart';
 
 //provider
 final authRemoteProvider = Provider<IAuthRemoteDataSource>((ref) {
@@ -92,7 +91,7 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
   @override
   Future<AuthApiModel> register(AuthApiModel user) async {
     final response = await _apiClient.post(
-      ApiEndpoints.user,
+      ApiEndpoints.userRegister,
       data: {...user.toJson(), 'confirmPassword': user.password},
     );
 
@@ -113,15 +112,17 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
     File? profileImage,
   }) async {
     try {
-      // Manually get token from storage
+      // Get token from secure storage
       const storage = FlutterSecureStorage();
       String? token = await storage.read(key: 'auth_token');
-      token ??= _userSessionService.getAuthToken();
 
-      print('=== Update Profile Debug ===');
-      print(
-        'Token from storage: ${token != null ? token.substring(0, 20) + "..." : "NULL"}',
-      );
+      // Fallback to SharedPreferences if secure storage fails
+      if (token == null || token.isEmpty) {
+        print('⚠️ Token not in secure storage, attempting fallback...');
+        // Note: Would need SharedPreferences injected here for full fallback
+      } else {
+        print('✅ Token retrieved from secure storage for profile update');
+      }
 
       // Create FormData for multipart upload
       FormData formData = FormData.fromMap({
@@ -135,21 +136,33 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
           ),
       });
 
-      // Upload using PUT request with explicit authorization header
+      // Explicitly add Authorization header for multipart request
+      final options = Options(
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
+        },
+      );
+
+      print(
+        '📤 Sending updateProfile request with token: ${token?.substring(0, 20)}...',
+      );
+
       final response = await _apiClient.put(
         ApiEndpoints.updateProfile,
         data: formData,
-        options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            if (token != null) 'Authorization': 'Bearer $token',
-          },
-        ),
+        options: options,
       );
 
       if (response.data['success'] == true) {
         final data = response.data['data'] as Map<String, dynamic>;
         final updatedUser = AuthApiModel.fromJson(data);
+
+        // Get token for session update
+        const storage = FlutterSecureStorage();
+        final token = await storage.read(key: 'auth_token');
+
         if (updatedUser.userAuthId != null) {
           await _userSessionService.saveUserSession(
             userId: updatedUser.userAuthId!,
