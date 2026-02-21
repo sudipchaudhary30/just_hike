@@ -18,8 +18,8 @@ class ApiClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: ApiEndpoints.connectionTimeout,
-        receiveTimeout: ApiEndpoints.receiveTimeout,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30), // fixed
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -152,7 +152,10 @@ class _AuthInterceptor extends Interceptor {
       final method = options.method.toUpperCase();
 
       final isPublic =
-          (method == 'GET' && path.contains('/treks')) ||
+          (method == 'GET' &&
+              (path.contains('/treks') ||
+                  path.contains('/blogs') ||
+                  path.contains('/guides'))) ||
           path.contains(ApiEndpoints.userLogin) ||
           path.contains(ApiEndpoints.userRegister);
 

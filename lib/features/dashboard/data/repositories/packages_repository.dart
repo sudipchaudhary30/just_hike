@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_hike/core/error/failures.dart';
 import 'package:just_hike/core/services/connectivity/networkinfo.dart';
 import 'package:just_hike/features/dashboard/data/datasources/remote/packages_remote_datasource.dart';
+import 'package:just_hike/features/dashboard/data/models/package_model.dart';
 import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart';
 import 'package:just_hike/features/dashboard/domain/repositories/packages_repository.dart';
 

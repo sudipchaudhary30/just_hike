@@ -1,149 +1,72 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_hike/core/error/failures.dart';
+// Add import if NetworkFailure is defined elsewhere, e.g.:
+// import 'package:just_hike/core/error/network_failure.dart';
+import 'package:just_hike/features/dashboard/data/repositories/packages_repository.dart'
+    as data_repo;
 import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart';
-import 'package:just_hike/features/dashboard/domain/usecases/packages_usecase.dart';
+import 'package:just_hike/features/dashboard/domain/usecases/packages_usecase.dart'
+    as usecase;
 
-// State class for packages
-class PackagesState {
+// State classes for UI
+class TrekPackagesState {
+  final List<PackageEntity> treks;
   final bool isLoading;
-  final List<PackageEntity> packages;
   final String? errorMessage;
 
-  PackagesState({
+  TrekPackagesState({
+    required this.treks,
     this.isLoading = false,
-    this.packages = const [],
     this.errorMessage,
   });
+}
 
-  PackagesState copyWith({
-    bool? isLoading,
-    List<PackageEntity>? packages,
-    String? errorMessage,
-  }) {
-    return PackagesState(
-      isLoading: isLoading ?? this.isLoading,
-      packages: packages ?? this.packages,
-      errorMessage: errorMessage ?? this.errorMessage,
-    );
+class MyBookingState {
+  final List<PackageEntity> packages;
+  final bool isLoading;
+  final String? errorMessage;
+
+  MyBookingState({
+    required this.packages,
+    this.isLoading = false,
+    this.errorMessage,
+  });
+}
+
+// Provider for trek packages (all packages)
+final trekPackagesProvider = FutureProvider<TrekPackagesState>((ref) async {
+  final repository = ref.read(data_repo.packagesRepositoryProvider);
+
+  final result = await repository.getAllPackages();
+
+  return result.fold(
+    (failure) => TrekPackagesState(
+      treks: [],
+      errorMessage: _mapFailureToMessage(failure),
+    ),
+    (packages) => TrekPackagesState(treks: packages),
+  );
+});
+
+// Provider for my bookings
+final myBookingProvider = FutureProvider<MyBookingState>((ref) async {
+  // You can implement this later when you have the endpoint
+  return MyBookingState(packages: []);
+});
+
+// Helper function to map failures to user-friendly messages
+String _mapFailureToMessage(Failure failure) {
+  if (failure is ApiFailure) {
+    return failure.message;
+  } else if (failure is NetworkFailure) {
+    return 'Network error. Please check your connection.';
+  } else {
+    return 'An unexpected error occurred.';
   }
 }
 
-// All packages provider
-final allPackagesProvider =
-    NotifierProvider<AllPackagesNotifier, PackagesState>(() {
-      return AllPackagesNotifier();
-    });
-
-class AllPackagesNotifier extends Notifier<PackagesState> {
-  late final GetAllPackagesUsecase _getAllPackagesUsecase;
-
-  @override
-  PackagesState build() {
-    _getAllPackagesUsecase = ref.read(getAllPackagesUsecaseProvider);
-    fetchPackages();
-    return PackagesState();
-  }
-
-  Future<void> fetchPackages() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
-    final result = await _getAllPackagesUsecase(NoParams());
-    result.fold(
-      (failure) {
-        state = state.copyWith(isLoading: false, errorMessage: failure.message);
-      },
-      (packages) {
-        state = state.copyWith(isLoading: false, packages: packages);
-      },
-    );
-  }
-}
-
-// Upcoming packages provider
-final upcomingPackagesProvider =
-    NotifierProvider<UpcomingPackagesNotifier, PackagesState>(() {
-      return UpcomingPackagesNotifier();
-    });
-
-class UpcomingPackagesNotifier extends Notifier<PackagesState> {
-  late final GetUpcomingPackagesUsecase _getUpcomingPackagesUsecase;
-
-  @override
-  PackagesState build() {
-    _getUpcomingPackagesUsecase = ref.read(getUpcomingPackagesUsecaseProvider);
-    fetchPackages();
-    return PackagesState();
-  }
-
-  Future<void> fetchPackages() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
-    final result = await _getUpcomingPackagesUsecase(NoParams());
-    result.fold(
-      (failure) {
-        state = state.copyWith(isLoading: false, errorMessage: failure.message);
-      },
-      (packages) {
-        state = state.copyWith(isLoading: false, packages: packages);
-      },
-    );
-  }
-}
-
-// Past packages provider
-final pastPackagesProvider =
-    NotifierProvider<PastPackagesNotifier, PackagesState>(() {
-      return PastPackagesNotifier();
-    });
-
-class PastPackagesNotifier extends Notifier<PackagesState> {
-  late final GetPastPackagesUsecase _getPastPackagesUsecase;
-
-  @override
-  PackagesState build() {
-    _getPastPackagesUsecase = ref.read(getPastPackagesUsecaseProvider);
-    fetchPackages();
-    return PackagesState();
-  }
-
-  Future<void> fetchPackages() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
-    final result = await _getPastPackagesUsecase(NoParams());
-    result.fold(
-      (failure) {
-        state = state.copyWith(isLoading: false, errorMessage: failure.message);
-      },
-      (packages) {
-        state = state.copyWith(isLoading: false, packages: packages);
-      },
-    );
-  }
-}
-
-// Wishlist provider
-final wishlistProvider = NotifierProvider<WishlistNotifier, PackagesState>(
-  () {
-    return WishlistNotifier();
-  },
-);
-
-class WishlistNotifier extends Notifier<PackagesState> {
-  late final GetWishlistUsecase _getWishlistUsecase;
-
-  @override
-  PackagesState build() {
-    _getWishlistUsecase = ref.read(getWishlistUsecaseProvider);
-    fetchWishlist();
-    return PackagesState();
-  }
-
-  Future<void> fetchWishlist() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
-    final result = await _getWishlistUsecase(NoParams());
-    result.fold(
-      (failure) {
-        state = state.copyWith(isLoading: false, errorMessage: failure.message);
-      },
-      (packages) {
-        state = state.copyWith(isLoading: false, packages: packages);
-      },
-    );
-  }
+// Define NetworkFailure if it doesn't exist
+class NetworkFailure extends Failure {
+  NetworkFailure([String message = 'Network error']) : super(message);
 }

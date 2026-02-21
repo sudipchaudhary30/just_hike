@@ -2,12 +2,15 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_hike/core/api/api_client.dart';
 import 'package:just_hike/core/error/failures.dart';
 import 'package:just_hike/core/services/connectivity/networkinfo.dart';
 import 'package:just_hike/features/dashboard/data/datasources/remote/packages_remote_datasource.dart';
 import 'package:just_hike/features/dashboard/data/repositories/packages_repository.dart';
+import 'package:just_hike/features/dashboard/data/repositories/packages_repository.dart' as data_repo;
 import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart';
 import 'package:just_hike/features/dashboard/domain/repositories/packages_repository.dart';
+import 'package:just_hike/core/api/api_endpoints.dart';
 
 final connectivityProvider = Provider<Connectivity>((ref) {
   return Connectivity();
@@ -39,7 +42,7 @@ class _DefaultNetworkInfo implements NetworkInfo {
 final packagesRepositoryProvider = Provider<IPackagesRepository>((ref) {
   final remoteDataSource = ref.read(packagesRemoteDatasourceProvider);
   final networkInfo = ref.read(networkInfoProvider);
-  return PackagesRepository(
+  return data_repo.PackagesRepository(
     remoteDataSource: remoteDataSource,
     networkInfo: networkInfo,
   );
@@ -47,7 +50,8 @@ final packagesRepositoryProvider = Provider<IPackagesRepository>((ref) {
 
 final getAllPackagesUsecaseProvider = Provider<GetAllPackagesUsecase>((ref) {
   final repository = ref.read(packagesRepositoryProvider);
-  return GetAllPackagesUsecase(repository);
+  final apiClient = ref.read(apiClientProvider);
+  return GetAllPackagesUsecase(repository, apiClient);
 });
 
 final getUpcomingPackagesUsecaseProvider = Provider<GetUpcomingPackagesUsecase>(
@@ -85,10 +89,14 @@ class NoParams extends Equatable {
 
 class GetAllPackagesUsecase extends UseCase<List<PackageEntity>, NoParams> {
   final IPackagesRepository _repository;
-  GetAllPackagesUsecase(this._repository);
+  final ApiClient _apiClient;
+
+  GetAllPackagesUsecase(this._repository, this._apiClient);
 
   @override
   Future<Either<Failure, List<PackageEntity>>> call(NoParams params) async {
+    final response = await _apiClient.get(ApiEndpoints.getAllPackages);
+    print('TREKS RESPONSE: ${response.data}');
     return _repository.getAllPackages();
   }
 }

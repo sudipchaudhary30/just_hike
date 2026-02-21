@@ -19,9 +19,7 @@ class _MyTripsScreenState extends ConsumerState<MyTripsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final upcomingState = ref.watch(upcomingPackagesProvider);
-    final pastState = ref.watch(pastPackagesProvider);
-    final wishlistState = ref.watch(wishlistProvider);
+    final bookingState = ref.watch(myBookingProvider); // Only booking provider
 
     return Scaffold(
       backgroundColor: _pageBg,
@@ -49,83 +47,23 @@ class _MyTripsScreenState extends ConsumerState<MyTripsScreen> {
                 ],
               ),
               const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: _tileBg,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _tabChip(
-                        label: 'Treks',
-                        icon: Icons.hiking,
-                        selected: _showTreks,
-                        onTap: () => setState(() => _showTreks = true),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _tabChip(
-                        label: 'Wishlist',
-                        icon: Icons.favorite_border,
-                        selected: !_showTreks,
-                        onTap: () => setState(() => _showTreks = false),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Remove tab chips for Wishlist
+              // Remove Wishlist section
               const SizedBox(height: 18),
-              if (_showTreks) ...[
-                if (upcomingState.isLoading)
-                  const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(_primary),
-                    ),
-                  )
-                else if (upcomingState.errorMessage != null)
-                  Text('Error: ${upcomingState.errorMessage}')
-                else if (upcomingState.packages.isEmpty)
-                  const Text('No upcoming treks')
-                else ...[
-                  _sectionTitle('Upcoming Treks'),
-                  const SizedBox(height: 10),
-                  ...upcomingState.packages.map((pkg) => _trekCard(pkg)),
-                ],
-                const SizedBox(height: 14),
-                if (pastState.isLoading)
-                  const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(_primary),
-                    ),
-                  )
-                else if (pastState.errorMessage != null)
-                  Text('Error: ${pastState.errorMessage}')
-                else if (pastState.packages.isEmpty)
-                  const Text('No past treks')
-                else ...[
-                  _sectionTitle('Past Treks'),
-                  const SizedBox(height: 10),
-                  ...pastState.packages.map((pkg) => _trekCard(pkg)),
-                ],
-              ] else ...[
-                if (wishlistState.isLoading)
-                  const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(_primary),
-                    ),
-                  )
-                else if (wishlistState.errorMessage != null)
-                  Text('Error: ${wishlistState.errorMessage}')
-                else if (wishlistState.packages.isEmpty)
-                  const Text('No wishlist items')
-                else ...[
-                  _sectionTitle('Wishlist'),
-                  const SizedBox(height: 10),
-                  ...wishlistState.packages.map((pkg) => _trekCard(pkg)),
-                ],
+              if (bookingState.isLoading)
+                const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(_primary),
+                  ),
+                )
+              else if (bookingState.hasError)
+                Text('Error: ${bookingState.error}')
+              else if (bookingState.value?.packages.isEmpty ?? true)
+                const Text('No upcoming treks')
+              else ...[
+                _sectionTitle('Upcoming Treks'),
+                const SizedBox(height: 10),
+                ...?bookingState.value?.packages.map((pkg) => _trekCard(pkg)).toList(),
               ],
             ],
           ),

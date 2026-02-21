@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
@@ -11,59 +10,39 @@ class ApiEndpoints {
   static const bool isPhysicalDevice = false;
 
   // Your PC IP address (same network as phone)
-  static const String compIpAddress = "172.25.0.126";
+  static const String compIpAddress = "192.168.1.65";
 
-  /// API base url
-  static String get baseUrl {
-    if (isPhysicalDevice) {
-      return 'http://$compIpAddress:5050/api';
-    }
+  /// Set with:
+  /// flutter run --dart-define=API_HOST=192.168.1.65
+  static const String _apiHostOverride = String.fromEnvironment('API_HOST');
 
-    if (kIsWeb) {
-      return 'http://localhost:5050/api';
-    } else if (Platform.isAndroid) {
-      // Android Emulator
-      return 'http://10.0.2.2:5050/api';
-    } else {
-      // iOS simulator / desktop
-      return 'http://localhost:5050/api';
-    }
+  static String get _host {
+    if (_apiHostOverride.isNotEmpty) return _apiHostOverride;
+    if (isPhysicalDevice) return compIpAddress;
+    if (kIsWeb) return 'localhost';
+    if (Platform.isAndroid) return '10.0.2.2';
+    return 'localhost';
   }
 
-  /// Image base url (static file server)
-  static String get imageBaseUrl {
-    if (isPhysicalDevice) {
-      return 'http://$compIpAddress:5050';
-    }
+  static String get baseUrl => 'http://$_host:5050/api';
+  static String get imageBaseUrl => 'http://$_host:5050';
 
-    if (kIsWeb) {
-      return 'http://localhost:5050';
-    } else if (Platform.isAndroid) {
-      // Android Emulator
-      return 'http://10.0.2.2:5050';
-    } else {
-      return 'http://localhost:5050';
-    }
-  }
-
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
-
-  static const String user = '/register';
   static const String userLogin = '/auth/login';
   static const String userRegister = '/auth/register';
   static const String updateProfile = '/auth/update-profile';
 
-  // Package/Trek endpoints
   static const String getAllPackages = '/treks';
-  static const String getPackageById = '/treks/:id';
 
-  // These do not exist in backend; keep if you implement later
-  static const String getUpcomingPackages = '/bookings';
-  static const String getPastPackages = '/bookings';
-  static const String getWishlist = '/packages/wishlist';
+  // Temporary fallback until backend endpoints exist:
+  static const String getUpcomingPackages = '/treks';
+  static const String getPastPackages = '/treks';
+  static const String getWishlist = '/treks';
   static String wishlistToggle(String packageId) =>
-      '/packages/$packageId/wishlist';
+      '/treks/$packageId/wishlist';
+
+  // Optional if your backend has these:
+  static const String getAllBlogs = '/blogs';
+  static const String getAllGuides = '/guides';
 
   // Profile picture URL helper - following teacher's pattern
   static String profilePicture(String filename) {

@@ -48,32 +48,39 @@ class PackageModel {
   factory PackageModel.fromJson(Map<String, dynamic> json) {
     return PackageModel(
       id: json['_id'] ?? json['id'] ?? '',
-      title: json['title'] ?? '',
+      title: json['title'] ?? json['name'] ?? '',
       description: json['description'] ?? '',
       location: json['location'] ?? '',
       price: (json['price'] ?? 0).toDouble(),
-      rating: (json['rating'] ?? 0).toDouble(),
-      reviewCount: json['reviewCount'] ?? 0,
-      daysCount: json['daysCount'] ?? 0,
-      nightsCount: json['nightsCount'] ?? 0,
-      imageUrl: json['imageUrl'],
-      banner: json['banner'],
-      highlights: json['highlights'] != null
-          ? List<String>.from(json['highlights'] as List)
-          : null,
+      rating: _calculateRating(json['difficulty']),
+      reviewCount: 0,
+      daysCount: json['durationDays'] ?? 0,
+      nightsCount: (json['durationDays'] ?? 0) - 1,
+      imageUrl: json['imageUrl'] ?? json['thumbnailUrl'],
+      banner: json['imageUrl'] ?? json['thumbnailUrl'],
+      highlights: [],
       difficulty: json['difficulty'] ?? 'moderate',
-      category: json['category'] ?? 'trek',
-      startDate: json['startDate'] != null
-          ? DateTime.parse(json['startDate'] as String)
-          : null,
-      endDate: json['endDate'] != null
-          ? DateTime.parse(json['endDate'] as String)
-          : null,
-      maxParticipants: json['maxParticipants'] ?? 0,
-      currentParticipants: json['currentParticipants'] ?? 0,
-      isWishlisted: json['isWishlisted'] ?? false,
-      status: json['status'] ?? 'active',
+      category: 'trek',
+      startDate: null,
+      endDate: null,
+      maxParticipants: json['maxGroupSize'] ?? 0,
+      currentParticipants: 0,
+      isWishlisted: false,
+      status: json['isActive'] == true ? 'active' : 'inactive',
     );
+  }
+
+  static double _calculateRating(String? difficulty) {
+    switch (difficulty?.toLowerCase()) {
+      case 'easy':
+        return 4.2;
+      case 'moderate':
+        return 4.5;
+      case 'difficult':
+        return 4.8;
+      default:
+        return 4.5;
+    }
   }
 
   Map<String, dynamic> toJson() {

@@ -50,7 +50,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     //                     );
     //                   },
 
-    final authState = ref.watch(authViewmodelProvider);
     ref.listen<AuthState>(authViewmodelProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
         Navigator.push(
@@ -93,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.circular(16),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.black.withOpacity(0.6),
+                          Colors.black.withValues(alpha: 0.6),
                           Colors.transparent,
                         ],
                         begin: Alignment.bottomCenter,

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:just_hike/core/api/api_endpoints.dart';
-import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart';
-import 'package:just_hike/features/dashboard/presentation/providers/packages_provider.dart';
 
-class ExploreScreen extends ConsumerWidget {
+class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final packagesState = ref.watch(allPackagesProvider);
 
+  @override
+  State<ExploreScreen> createState() => _ExploreScreenState();
+}
+
+class _ExploreScreenState extends State<ExploreScreen> {
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF00D0B0),
       body: SafeArea(
@@ -45,7 +45,7 @@ class ExploreScreen extends ConsumerWidget {
                         const Expanded(
                           child: TextField(
                             decoration: InputDecoration(
-                              hintText: 'Trek you want to join',
+                              hintText: 'Hike you want to join',
                               hintStyle: TextStyle(color: Colors.grey),
                               border: InputBorder.none,
                             ),
@@ -75,6 +75,45 @@ class ExploreScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Top Guides Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Top Guides',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            child: const Text(
+                              'explore',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Guides Horizontal List
+                      SizedBox(
+                        height: 90,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            _guideAvatar('assets/images/guide1.jpg', 'Tashi'),
+                            _guideAvatar('assets/images/guide2.jpg', 'Dawa'),
+                            _guideAvatar('assets/images/guide3.jpg', 'Biguna'),
+                            _guideAvatar('assets/images/guide4.jpg', 'Samir'),
+                            _guideAvatar('assets/images/guide5.jpg', 'Pratap'),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
                       // Popular Destinations Section
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -108,44 +147,26 @@ class ExploreScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
 
                       // Destinations Grid
-                      if (packagesState.isLoading)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Color(0xFF00D0B0)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _destinationCard(
+                              'Upper Mustang',
+                              'Mountains and wildlife adventures',
+                              'Rs 21000',
                             ),
                           ),
-                        )
-                      else if (packagesState.errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Center(
-                            child: Text('Error: ${packagesState.errorMessage}'),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _destinationCard(
+                              'Ruby Valley',
+                              'Mountains',
+                              'Rs 31000',
+                            ),
                           ),
-                        )
-                      else if (packagesState.packages.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Center(
-                            child: Text('No packages available'),
-                          ),
-                        )
-                      else
-                        Row(
-                          children: [
-                            if (packagesState.packages.isNotEmpty)
-                              Expanded(
-                                child: _destinationCard(packagesState.packages[0]),
-                              ),
-                            const SizedBox(width: 12),
-                            if (packagesState.packages.length > 1)
-                              Expanded(
-                                child: _destinationCard(packagesState.packages[1]),
-                              ),
-                          ],
-                        ),
+                        ],
+                      ),
+
                       const SizedBox(height: 24),
 
                       // Popular Treks Section
@@ -158,26 +179,18 @@ class ExploreScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
 
-                      // Trek Cards - show remaining packages
-                      if (packagesState.isLoading)
-                        const Center(
-                          child: CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Color(0xFF00D0B0)),
+                      // Trek Image Card
+                      Container(
+                        height: 200,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          image: const DecorationImage(
+                            image: AssetImage('assets/images/popular_trek.jpg'),
+                            fit: BoxFit.cover,
                           ),
-                        )
-                      else if (packagesState.errorMessage != null)
-                        Center(
-                          child: Text('Error: ${packagesState.errorMessage}'),
-                        )
-                      else if (packagesState.packages.isEmpty)
-                        const Center(
-                          child: Text('No packages available'),
-                        )
-                      else
-                        ...packagesState.packages.skip(2).map((pkg) {
-                          return _trekCard(pkg);
-                        }).toList(),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -189,7 +202,34 @@ class ExploreScreen extends ConsumerWidget {
     );
   }
 
-  Widget _destinationCard(PackageEntity package) {
+  Widget _guideAvatar(String imagePath, String name) {
+    return Container(
+      margin: const EdgeInsets.only(right: 16),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF00D0B0), width: 2),
+              image: DecorationImage(
+                image: AssetImage(imagePath),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            name,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _destinationCard(String title, String subtitle, String price) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -207,27 +247,22 @@ class ExploreScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            package.title,
+            title,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           Text(
-            package.description.isNotEmpty
-                ? package.description
-                : package.location,
+            subtitle,
             style: const TextStyle(
               fontSize: 12,
               color: Colors.grey,
               height: 1.4,
             ),
             maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           Text(
-            'Rs ${package.price.toStringAsFixed(0)}',
+            price,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -236,61 +271,6 @@ class ExploreScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _trekCard(PackageEntity package) {
-    final imageUrl = package.imageUrl ?? package.banner ?? '';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      height: 200,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        image: imageUrl.startsWith('http')
-            ? DecorationImage(
-                image: NetworkImage(imageUrl),
-                fit: BoxFit.cover,
-              )
-            : null,
-        color: imageUrl.isEmpty ? Colors.grey[300] : null,
-      ),
-      child: imageUrl.isEmpty
-          ? const Center(
-              child: Icon(Icons.image, size: 40),
-            )
-          : Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: Colors.black.withOpacity(0.3),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    package.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    package.location,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
     );
   }
 }
