@@ -1,237 +1,185 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart';
-import 'package:just_hike/features/dashboard/presentation/providers/packages_provider.dart';
+import '../../providers/booking_provider.dart';
 
-class MyTripsScreen extends ConsumerStatefulWidget {
-  const MyTripsScreen({super.key});
-
+class MyTripsScreen extends ConsumerWidget {
   @override
-  ConsumerState<MyTripsScreen> createState() => _MyTripsScreenState();
-}
-
-class _MyTripsScreenState extends ConsumerState<MyTripsScreen> {
-  bool _showTreks = true;
-
-  static const Color _primary = Color(0xFF00D0B0);
-  static const Color _pageBg = Color(0xFFF5F6F7);
-  static const Color _tileBg = Color(0xFFF2ECEC);
-
-  @override
-  Widget build(BuildContext context) {
-    final bookingState = ref.watch(myBookingProvider); // Only booking provider
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bookingRepo = ref.read(bookingProvider);
+    final bookings = bookingRepo.getBookings();
 
     return Scaffold(
-      backgroundColor: _pageBg,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'My Treks',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  _circleActionButton(Icons.notifications_none_rounded),
-                  const SizedBox(width: 10),
-                  _circleActionButton(Icons.settings_outlined),
-                ],
-              ),
-              const SizedBox(height: 14),
-              // Remove tab chips for Wishlist
-              // Remove Wishlist section
-              const SizedBox(height: 18),
-              if (bookingState.isLoading)
-                const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(_primary),
-                  ),
-                )
-              else if (bookingState.hasError)
-                Text('Error: ${bookingState.error}')
-              else if (bookingState.value?.packages.isEmpty ?? true)
-                const Text('No upcoming treks')
-              else ...[
-                _sectionTitle('Upcoming Treks'),
-                const SizedBox(height: 10),
-                ...?bookingState.value?.packages.map((pkg) => _trekCard(pkg)).toList(),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _circleActionButton(IconData icon) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Icon(icon, size: 19, color: _primary),
-    );
-  }
-
-  Widget _tabChip({
-    required String label,
-    required IconData icon,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        decoration: BoxDecoration(
-          color: selected ? _primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 17, color: selected ? Colors.white : _primary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : _primary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
-    );
-  }
-
-  Widget _trekCard(PackageEntity package) {
-    final bool isCompleted = package.status == 'Completed';
-    final String imageUrl = package.imageUrl ?? package.banner ?? '';
-    final String formattedDate =
-        '${package.startDate?.toLocal().toString().split(' ')[0]} – ${package.endDate?.toLocal().toString().split(' ')[0]}';
-    final String durationText =
-        '${package.daysCount} Days ${package.nightsCount} Nights';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: imageUrl.startsWith('http')
-                ? Image.network(
-                    imageUrl,
-                    width: 92,
-                    height: 84,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 92,
-                        height: 84,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image),
-                      );
-                    },
-                  )
-                : Container(
-                    width: 92,
-                    height: 84,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.image),
-                  ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2),
+      appBar: AppBar(title: const Text('My Trips'), centerTitle: true),
+      body: bookings.isEmpty
+          ? Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    package.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    formattedDate,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    durationText,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    package.status,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: isCompleted ? _primary : _primary,
-                    ),
+                  Icon(Icons.airline_stops, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No trips booked yet.',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                 ],
               ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: bookings.length,
+              itemBuilder: (context, index) {
+                final booking = bookings[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                        child: booking['trekImageUrl'] != null
+                            ? Image.network(
+                                booking['trekImageUrl'],
+                                height: 180,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      height: 180,
+                                      color: Colors.grey[300],
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        size: 60,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                              )
+                            : Container(
+                                height: 180,
+                                color: Colors.grey[300],
+                                child: Icon(
+                                  Icons.hiking,
+                                  size: 60,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              booking['trekTitle'] ?? 'Unknown Trek',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.person,
+                                  size: 18,
+                                  color: Colors.grey[700],
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Booked by: ${booking['bookedBy'] ?? "Unknown"}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 18,
+                                  color: Colors.grey[700],
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'From: ${booking['fromDate']}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.flag,
+                                  size: 18,
+                                  color: Colors.grey[700],
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Nationality: ${booking['nationality']}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.group,
+                                  size: 18,
+                                  color: Colors.grey[700],
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Travelers: ${booking['adults']} Adult(s), ${booking['children']} Children',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.attach_money,
+                                  size: 18,
+                                  color: Colors.green[700],
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Total Price: ₹${booking['totalPrice']}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.green[700],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
-          const SizedBox(width: 6),
-          Container(
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              color: _primary,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(
-              package.isWishlisted ? Icons.favorite : Icons.favorite_border,
-              size: 14,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
