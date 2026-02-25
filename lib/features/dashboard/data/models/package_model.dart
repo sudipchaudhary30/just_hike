@@ -4,6 +4,7 @@ class PackageModel {
   final String id;
   final String title;
   final String description;
+  final String? aboutPackage;
   final String location;
   final double price;
   final double rating;
@@ -11,7 +12,7 @@ class PackageModel {
   final int daysCount;
   final int nightsCount;
   final String? imageUrl;
-  final String? banner;
+  final String? thumbnailUrl;
   final List<String>? highlights;
   final String difficulty;
   final String category;
@@ -21,11 +22,17 @@ class PackageModel {
   final int currentParticipants;
   final bool isWishlisted;
   final String status;
+  final int? availableSlots;
+  final String? itinerary;
+  final String? overview;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   PackageModel({
     required this.id,
     required this.title,
     required this.description,
+    this.aboutPackage,
     required this.location,
     required this.price,
     required this.rating,
@@ -33,7 +40,7 @@ class PackageModel {
     required this.daysCount,
     required this.nightsCount,
     this.imageUrl,
-    this.banner,
+    this.thumbnailUrl,
     this.highlights,
     required this.difficulty,
     required this.category,
@@ -43,21 +50,28 @@ class PackageModel {
     required this.currentParticipants,
     this.isWishlisted = false,
     required this.status,
+    this.availableSlots,
+    this.itinerary,
+    this.overview,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory PackageModel.fromJson(Map<String, dynamic> json) {
+    print('PackageModel.fromJson: $json');
     return PackageModel(
       id: json['_id'] ?? json['id'] ?? '',
       title: json['title'] ?? json['name'] ?? '',
       description: json['description'] ?? '',
+      aboutPackage: json['aboutPackage'],
       location: json['location'] ?? '',
       price: (json['price'] ?? 0).toDouble(),
       rating: _calculateRating(json['difficulty']),
       reviewCount: 0,
       daysCount: json['durationDays'] ?? 0,
       nightsCount: (json['durationDays'] ?? 0) - 1,
-      imageUrl: json['imageUrl'] ?? json['thumbnailUrl'],
-      banner: json['imageUrl'] ?? json['thumbnailUrl'],
+      imageUrl: json['imageUrl'],
+      thumbnailUrl: json['thumbnailUrl'],
       highlights: [],
       difficulty: json['difficulty'] ?? 'moderate',
       category: 'trek',
@@ -67,6 +81,15 @@ class PackageModel {
       currentParticipants: 0,
       isWishlisted: false,
       status: json['isActive'] == true ? 'active' : 'inactive',
+      availableSlots: json['availableSlots'],
+      itinerary: json['itinerary'],
+      overview: json['overview'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'])
+          : null,
     );
   }
 
@@ -95,13 +118,13 @@ class PackageModel {
       'daysCount': daysCount,
       'nightsCount': nightsCount,
       'imageUrl': imageUrl,
-      'banner': banner,
+      'thumbnailUrl': thumbnailUrl,
       'highlights': highlights,
       'difficulty': difficulty,
       'category': category,
       'startDate': startDate?.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
-      'maxParticipants': maxParticipants,
+      'maxGroupSize': maxParticipants,
       'currentParticipants': currentParticipants,
       'isWishlisted': isWishlisted,
       'status': status,
@@ -120,7 +143,7 @@ class PackageModel {
       daysCount: daysCount,
       nightsCount: nightsCount,
       imageUrl: imageUrl,
-      banner: banner,
+      thumbnailUrl: thumbnailUrl,
       highlights: highlights,
       difficulty: difficulty,
       category: category,
@@ -130,6 +153,8 @@ class PackageModel {
       currentParticipants: currentParticipants,
       isWishlisted: isWishlisted,
       status: status,
+      itinerary: itinerary,
+      overview: overview,
     );
   }
 
@@ -145,7 +170,7 @@ class PackageModel {
       daysCount: entity.daysCount,
       nightsCount: entity.nightsCount,
       imageUrl: entity.imageUrl,
-      banner: entity.banner,
+      thumbnailUrl: entity.thumbnailUrl,
       highlights: entity.highlights,
       difficulty: entity.difficulty,
       category: entity.category,

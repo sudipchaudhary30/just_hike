@@ -24,7 +24,7 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
   List<Widget> lstBottomScreen = [
     const HomeScreen(),
     const ExploreScreen(),
-    const MyTripsScreen(),
+    MyTripsScreen(),
     const ProfileScreen(),
   ];
 

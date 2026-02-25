@@ -30,7 +30,8 @@ class PackagesRemoteDatasource implements IPackagesRemoteDatasource {
     try {
       final response = await _apiClient.get(ApiEndpoints.getAllPackages);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final List<dynamic> data = response.data['data'] ?? response.data;
+        // Backend returns { success, message, data: [ ... ] }
+        final List<dynamic> data = response.data['data'] ?? [];
         return List<PackageModel>.from(
           data.map((x) => PackageModel.fromJson(x as Map<String, dynamic>)),
         );
@@ -48,7 +49,7 @@ class PackagesRemoteDatasource implements IPackagesRemoteDatasource {
     try {
       final response = await _apiClient.get(ApiEndpoints.getUpcomingPackages);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final List<dynamic> data = response.data['data'] ?? response.data;
+        final List<dynamic> data = response.data['data'] ?? [];
         return List<PackageModel>.from(
           data.map((x) => PackageModel.fromJson(x as Map<String, dynamic>)),
         );
@@ -66,7 +67,7 @@ class PackagesRemoteDatasource implements IPackagesRemoteDatasource {
     try {
       final response = await _apiClient.get(ApiEndpoints.getPastPackages);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final List<dynamic> data = response.data['data'] ?? response.data;
+        final List<dynamic> data = response.data['data'] ?? [];
         return List<PackageModel>.from(
           data.map((x) => PackageModel.fromJson(x as Map<String, dynamic>)),
         );
@@ -84,7 +85,7 @@ class PackagesRemoteDatasource implements IPackagesRemoteDatasource {
     try {
       final response = await _apiClient.get(ApiEndpoints.getWishlist);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final List<dynamic> data = response.data['data'] ?? response.data;
+        final List<dynamic> data = response.data['data'] ?? [];
         return List<PackageModel>.from(
           data.map((x) => PackageModel.fromJson(x as Map<String, dynamic>)),
         );

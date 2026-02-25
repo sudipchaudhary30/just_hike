@@ -82,7 +82,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     image: const DecorationImage(
-                      image: AssetImage("assets/images/onboard1.jpg"),
+                      image: AssetImage("assets/images/logo.png"),
                       fit: BoxFit.cover,
                     ),
                   ),

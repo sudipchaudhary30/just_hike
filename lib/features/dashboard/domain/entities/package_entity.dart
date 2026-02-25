@@ -9,7 +9,7 @@ class PackageEntity {
   final int daysCount;
   final int nightsCount;
   final String? imageUrl;
-  final String? banner;
+  final String? thumbnailUrl;
   final List<String>? highlights;
   final String difficulty;
   final String category;
@@ -19,6 +19,8 @@ class PackageEntity {
   final int currentParticipants;
   final bool isWishlisted;
   final String status;
+  final String? itinerary;
+  final String? overview;
 
   PackageEntity({
     required this.id,
@@ -31,7 +33,7 @@ class PackageEntity {
     required this.daysCount,
     required this.nightsCount,
     this.imageUrl,
-    this.banner,
+    this.thumbnailUrl,
     this.highlights,
     required this.difficulty,
     required this.category,
@@ -41,5 +43,7 @@ class PackageEntity {
     required this.currentParticipants,
     this.isWishlisted = false,
     required this.status,
+    this.itinerary,
+    this.overview,
   });
 }
