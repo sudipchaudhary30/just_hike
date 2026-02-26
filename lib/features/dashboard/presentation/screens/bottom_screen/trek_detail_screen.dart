@@ -6,8 +6,7 @@ import 'package:just_hike/features/dashboard/presentation/screens/booking_screen
 
 class TrekDetailScreen extends StatelessWidget {
   final PackageEntity trek;
-
-  const TrekDetailScreen({super.key, required this.trek});
+  const TrekDetailScreen({Key? key, required this.trek}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
