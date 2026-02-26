@@ -123,35 +123,46 @@ class HomeScreen extends ConsumerWidget {
               );
             }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildBanner(context, state.treks.first),
-                  const SizedBox(height: 24),
-                  _sectionHeader('Popular Treks'),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 260,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: state.treks.length > 5
-                          ? 5
-                          : state.treks.length,
-                      itemBuilder: (context, index) {
-                        return _popularTrekCard(context, state.treks[index]);
-                      },
-                    ),
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildBanner(
+                        context,
+                        state.treks.first,
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      const SizedBox(height: 24),
+                      _sectionHeader('Popular Treks'),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 260,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: state.treks.length > 5
+                              ? 5
+                              : state.treks.length,
+                          itemBuilder: (context, index) {
+                            return _popularTrekCard(
+                              context,
+                              state.treks[index],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _sectionHeader('All Treks'),
+                      const SizedBox(height: 12),
+                      ...state.treks.map((trek) {
+                        return _recommendedTrekCard(context, trek);
+                      }).toList(),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  _sectionHeader('All Treks'),
-                  const SizedBox(height: 12),
-                  ...state.treks.map((trek) {
-                    return _recommendedTrekCard(context, trek);
-                  }).toList(),
-                ],
-              ),
+                );
+              },
             );
           },
         ),
@@ -159,7 +170,11 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBanner(BuildContext context, PackageEntity trek) {
+  Widget _buildBanner(
+    BuildContext context,
+    PackageEntity trek, {
+    double? maxWidth,
+  }) {
     final imageUrl = getTrekImageUrl(trek);
 
     Widget imageWidget = imageUrl.isNotEmpty
@@ -182,7 +197,7 @@ class HomeScreen extends ConsumerWidget {
       },
       child: Container(
         height: 200,
-        width: double.infinity,
+        width: maxWidth ?? double.infinity,
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
         child: Stack(
           children: [
@@ -246,144 +261,6 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                     child: const Text('View Details'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _popularTrekCard(BuildContext context, PackageEntity trek) {
-    final imageUrl = getTrekThumbnailUrl(trek);
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => TrekDetailScreen(trek: trek)),
-        );
-      },
-      child: Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: imageUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      height: 130,
-                      width: 200,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        height: 130,
-                        width: 200,
-                        color: Colors.grey[300],
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFF00D0B0),
-                            ),
-                          ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Image.asset(
-                        'assets/images/trek_banner.jpg',
-                        fit: BoxFit.cover,
-                        height: 130,
-                        width: 200,
-                      ),
-                    )
-                  : Image.asset(
-                      'assets/images/trek_banner.jpg',
-                      fit: BoxFit.cover,
-                      height: 130,
-                      width: 200,
-                    ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    trek.title,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getDifficultyColor(trek.difficulty),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          trek.difficulty,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${trek.daysCount}D/${trek.nightsCount}N',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        'NPR ${trek.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          color: Color(0xFF00D0B0),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.star, color: Colors.amber, size: 16),
-                      Text(
-                        trek.rating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          color: Colors.amber,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -554,6 +431,159 @@ class HomeScreen extends ConsumerWidget {
       default:
         return Colors.blue;
     }
+  }
+
+  // Popular Trek Card widget
+  Widget _popularTrekCard(BuildContext context, PackageEntity trek) {
+    final imageUrl = getTrekThumbnailUrl(trek);
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => TrekDetailScreen(trek: trek)),
+        );
+      },
+      child: Container(
+        width: 180,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              child: imageUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      width: 180,
+                      height: 110,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        width: 180,
+                        height: 110,
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF00D0B0),
+                            ),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Image.asset(
+                        'assets/images/trek_banner.jpg',
+                        fit: BoxFit.cover,
+                        width: 180,
+                        height: 110,
+                      ),
+                    )
+                  : Image.asset(
+                      'assets/images/trek_banner.jpg',
+                      fit: BoxFit.cover,
+                      width: 180,
+                      height: 110,
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    trek.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    trek.location,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getDifficultyColor(
+                            trek.difficulty,
+                          ).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          trek.difficulty,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: _getDifficultyColor(trek.difficulty),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${trek.daysCount}D/${trek.nightsCount}N',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'NPR ${trek.price.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00D0B0),
+                          fontSize: 15,
+                        ),
+                      ),
+                      if (trek.rating > 0)
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 15,
+                            ),
+                            Text(
+                              ' ${trek.rating.toStringAsFixed(1)}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _sectionHeader(String title) {
