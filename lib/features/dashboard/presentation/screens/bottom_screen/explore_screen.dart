@@ -1,4 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_hike/core/api/api_endpoints.dart';
+import 'package:just_hike/features/dashboard/presentation/providers/packages_provider.dart';
+import 'package:just_hike/features/dashboard/presentation/providers/profile_provider.dart';
+import 'package:just_hike/features/dashboard/presentation/screens/bottom_screen/trek_detail_screen.dart';
+import 'package:just_hike/models/guide.dart';
+
+// Make sure you have a Guide model imported or defined somewhere
+// Example:
+// class Guide {
+//   final String? name;
+//   final String? email;
+//   final String? phoneNumber;
+//   final String? bio;
+//   final int? experienceYears;
+//   final List<String>? languages;
+//   final String? imageUrl;
+//   final String? profileImage;
+//   final DateTime? createdAt;
+//   final DateTime? updatedAt;
+//   Guide({ ... });
+// }
+
+class Guide {
+  final String? imageUrl;
+  // ... other fields ...
+  Guide({this.imageUrl /*, ...*/});
+}
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -70,128 +98,96 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     topRight: Radius.circular(30),
                   ),
                 ),
-                child: SingleChildScrollView(
+                child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Top Guides Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Top Guides',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: const Text(
-                              'explore',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Guides Horizontal List
-                      SizedBox(
-                        height: 90,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top Guides Section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _guideAvatar('assets/images/guide1.jpg', 'Tashi'),
-                            _guideAvatar('assets/images/guide2.jpg', 'Dawa'),
-                            _guideAvatar('assets/images/guide3.jpg', 'Biguna'),
-                            _guideAvatar('assets/images/guide4.jpg', 'Samir'),
-                            _guideAvatar('assets/images/guide5.jpg', 'Pratap'),
+                            const Text(
+                              'Top Guides',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {},
+                              child: const Text(
+                                'explore',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Popular Destinations Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Popular Destinations',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: Row(
-                              children: const [
-                                Text(
-                                  'More',
-                                  style: TextStyle(color: Color(0xFF00D0B0)),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 110,
+                          child: Consumer(
+                            builder: (context, ref, child) {
+                              final guidesAsync = ref.watch(guidesProvider);
+                              return guidesAsync.when(
+                                data: (guides) {
+                                  final topGuides = guides.take(5).toList();
+                                  return ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: topGuides.length,
+                                    itemBuilder: (context, index) {
+                                      final guide = topGuides[index];
+                                      return _guideInfoCard(guide);
+                                    },
+                                  );
+                                },
+                                loading: () => const Center(
+                                  child: CircularProgressIndicator(),
                                 ),
-                                SizedBox(width: 4),
-                                Icon(
-                                  Icons.arrow_forward,
-                                  size: 16,
-                                  color: Color(0xFF00D0B0),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Destinations Grid
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _destinationCard(
-                              'Upper Mustang',
-                              'Mountains and wildlife adventures',
-                              'Rs 21000',
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _destinationCard(
-                              'Ruby Valley',
-                              'Mountains',
-                              'Rs 31000',
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Popular Treks Section
-                      const Text(
-                        'Popular Treks',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Trek Image Card
-                      Container(
-                        height: 200,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          image: const DecorationImage(
-                            image: AssetImage('assets/images/popular_trek.jpg'),
-                            fit: BoxFit.cover,
+                                error: (err, stack) => Text('Error: $err'),
+                              );
+                            },
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+
+                        // Popular Destinations Section (dynamic)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Popular Destinations',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {},
+                              child: Row(
+                                children: const [
+                                  Text(
+                                    'More',
+                                    style: TextStyle(color: Color(0xFF00D0B0)),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Icon(
+                                    Icons.arrow_forward,
+                                    size: 16,
+                                    color: Color(0xFF00D0B0),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Dynamic trek list
+                        _buildTrekList(context),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -202,27 +198,201 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Widget _guideAvatar(String imagePath, String name) {
+  Widget _buildTrekList(BuildContext context) {
+    return Builder(
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final trekPackagesAsync = ref.watch(trekPackagesProvider);
+            return trekPackagesAsync.when(
+              data: (state) {
+                final treks = state.treks;
+                if (treks == null || treks.isEmpty) {
+                  return const Text('No treks found');
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: treks.length,
+                  itemBuilder: (context, index) {
+                    final trek = treks[index];
+                    final imageUrl = ApiEndpoints.getImageUrl(trek.imageUrl);
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TrekDetailScreen(trek: trek),
+                          ),
+                        );
+                      },
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                              child: imageUrl != null && imageUrl.isNotEmpty
+                                  ? Image.network(
+                                      imageUrl,
+                                      height: 180,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Container(
+                                                height: 180,
+                                                color: Colors.grey[200],
+                                                child: const Center(
+                                                  child: Icon(
+                                                    Icons.broken_image,
+                                                  ),
+                                                ),
+                                              ),
+                                    )
+                                  : Container(
+                                      height: 180,
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: Icon(Icons.image),
+                                      ),
+                                    ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    trek.title ?? trek.id ?? 'Unknown Trek',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    trek.description ??
+                                        'No description available',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    trek.price != null
+                                        ? 'Rs ${trek.price}'
+                                        : 'Price not available',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Text('Error: $err'),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _guideInfoCard(dynamic guide) {
+    // Use dynamic if Guide is not imported, otherwise use Guide
     return Container(
+      width: 240,
       margin: const EdgeInsets.only(right: 16),
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF00D0B0), width: 2),
-              image: DecorationImage(
-                image: AssetImage(imagePath),
-                fit: BoxFit.cover,
-              ),
-            ),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(height: 6),
-          Text(
-            name,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundImage: guide.imageUrl ?? guide.avatar ?? guide.photo ?? ''
+                ? NetworkImage(
+                    guide.imageUrl ?? guide.avatar ?? guide.photo ?? '',
+                  )
+                : const AssetImage('assets/images/guide_placeholder.png')
+                      as ImageProvider,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  guide.name ?? 'Unknown',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (guide.bio != null && guide.bio.isNotEmpty)
+                  Text(
+                    guide.bio,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                if (guide.email != null && guide.email.isNotEmpty)
+                  Text(
+                    'Email: ${guide.email}',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                if (guide.phoneNumber != null && guide.phoneNumber.isNotEmpty)
+                  Text(
+                    'Phone: ${guide.phoneNumber}',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                if (guide.experienceYears != null)
+                  Text(
+                    'Exp: ${guide.experienceYears} yrs',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                if (guide.languages != null && guide.languages.isNotEmpty)
+                  Text(
+                    'Lang: ${guide.languages.join(", ")}',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                if (guide.createdAt != null)
+                  Text(
+                    'Joined: ${guide.createdAt.toString().substring(0, 10)}',
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                if (guide.updatedAt != null)
+                  Text(
+                    'Updated: ${guide.updatedAt.toString().substring(0, 10)}',
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
