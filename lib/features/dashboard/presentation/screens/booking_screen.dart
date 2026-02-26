@@ -3,7 +3,8 @@ import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_hike/features/dashboard/presentation/providers/booking_provider.dart';
 import 'package:just_hike/features/dashboard/presentation/providers/my_bookings_provider.dart'; // Ensure this file exists and exports 'myBookingsProvider'
-import 'package:just_hike/features/dashboard/presentation/providers/profile_provider.dart';
+
+import 'package:just_hike/core/services/storage/user_session_service.dart';
 
 class BookingScreen extends ConsumerStatefulWidget {
   final PackageEntity trek;
@@ -194,19 +195,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   Future<void> _handleBooking() async {
     try {
-      final userProfile = ref.read(profileProvider);
       final bookingData = {
         'trekId': widget.trek.id,
-        'trekTitle': widget.trek.title, // Add trek name
-        'trekImageUrl': widget.trek.imageUrl, // Add trek image
-        'bookedBy': userProfile.name, // Add user name from profile
-        'fromDate': fromDate!.toIso8601String(),
-        'nationality': nationality!,
-        'adults': adults,
-        'children': children,
-        'totalPrice': widget.trek.price * (adults + children),
+        'startDate': fromDate!.toIso8601String(),
+        'participants': adults + children,
       };
 
+      print('Booking data being sent:');
+      print(bookingData);
       final bookingRepo = ref.read(bookingProvider);
       await bookingRepo.saveBooking(bookingData);
 
