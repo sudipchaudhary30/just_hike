@@ -13,6 +13,10 @@ final UserSessionServiceProvider = Provider<UserSessionService>((ref) {
 });
 
 class UserSessionService {
+  String? getUserFullName() {
+    return _prefs.getString(_keyUserFullName);
+  }
+
   final SharedPreferences _prefs;
 
   UserSessionService({required SharedPreferences prefs}) : _prefs = prefs;
