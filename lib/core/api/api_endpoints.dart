@@ -51,8 +51,11 @@ class ApiEndpoints {
   static String getImageUrl(String? path) {
     if (path == null || path.isEmpty) return '';
 
-    // If already a full URL, replace localhost with PC IP
+    // If already a full URL, replace localhost with emulator IP or PC IP
     if (path.startsWith('http://localhost')) {
+      if (Platform.isAndroid) {
+        return path.replaceFirst('http://localhost', 'http://10.0.2.2');
+      }
       return path.replaceFirst('http://localhost', 'http://192.168.1.65');
     }
     if (path.startsWith('http')) return path;
