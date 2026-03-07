@@ -4,29 +4,9 @@ import 'package:just_hike/core/api/api_endpoints.dart';
 import 'package:just_hike/features/dashboard/presentation/providers/packages_provider.dart';
 import 'package:just_hike/features/dashboard/presentation/providers/profile_provider.dart';
 import 'package:just_hike/features/dashboard/presentation/screens/bottom_screen/trek_detail_screen.dart';
-import 'package:just_hike/models/guide.dart';
-
-// Make sure you have a Guide model imported or defined somewhere
-// Example:
-// class Guide {
-//   final String? name;
-//   final String? email;
-//   final String? phoneNumber;
-//   final String? bio;
-//   final int? experienceYears;
-//   final List<String>? languages;
-//   final String? imageUrl;
-//   final String? profileImage;
-//   final DateTime? createdAt;
-//   final DateTime? updatedAt;
-//   Guide({ ... });
-// }
-
-class Guide {
-  final String? imageUrl;
-  // ... other fields ...
-  Guide({this.imageUrl /*, ...*/});
-}
+import 'package:just_hike/models/guide.dart' as model;
+import 'package:permission_handler/permission_handler.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -36,16 +16,98 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
+  static const Color _brand = Color(0xFF00D0B0);
+  final TextEditingController _searchController = TextEditingController();
+  final stt.SpeechToText _speechToText = stt.SpeechToText();
+  String _searchQuery = '';
+  bool _isListening = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _speechToText.stop();
+    super.dispose();
+  }
+
+  Future<void> _toggleVoiceSearch() async {
+    if (_isListening) {
+      await _speechToText.stop();
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+        });
+      }
+      return;
+    }
+
+    final micPermission = await Permission.microphone.request();
+    if (!micPermission.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone permission is required.')),
+        );
+      }
+      return;
+    }
+
+    final available = await _speechToText.initialize(
+      onStatus: (status) {
+        if (!mounted) return;
+        if (status == 'done' || status == 'notListening') {
+          setState(() {
+            _isListening = false;
+          });
+        }
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          _isListening = false;
+        });
+      },
+    );
+
+    if (!available) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Speech recognition is not available.')),
+        );
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isListening = true;
+    });
+
+    await _speechToText.listen(
+      onResult: (result) {
+        if (!mounted) return;
+        final recognizedText = result.recognizedWords.trim();
+        if (recognizedText.isEmpty) return;
+        setState(() {
+          _searchQuery = recognizedText;
+          _searchController.value = TextEditingValue(
+            text: recognizedText,
+            selection: TextSelection.collapsed(offset: recognizedText.length),
+          );
+        });
+      },
+      partialResults: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF00D0B0),
+      backgroundColor: _brand,
       body: SafeArea(
         child: Column(
           children: [
             // Header Section
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -58,10 +120,22 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Find trails, trusted guides, and your next adventure',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   // Search Bar
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -70,8 +144,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       children: [
                         const Icon(Icons.search, color: Colors.grey),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: TextField(
+                            controller: _searchController,
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value.trim();
+                              });
+                            },
                             decoration: InputDecoration(
                               hintText: 'Hike you want to join',
                               hintStyle: TextStyle(color: Colors.grey),
@@ -79,9 +159,50 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             ),
                           ),
                         ),
-                        Icon(Icons.mic, color: Colors.grey[400]),
+                        if (_searchQuery.isNotEmpty)
+                          GestureDetector(
+                            onTap: () {
+                              FocusScope.of(context).unfocus();
+                              setState(() {
+                                _searchQuery = '';
+                                _searchController.clear();
+                              });
+                            },
+                            child: Icon(Icons.close, color: Colors.grey[400]),
+                          )
+                        else
+                          GestureDetector(
+                            onTap: _toggleVoiceSearch,
+                            child: Icon(
+                              _isListening ? Icons.mic : Icons.mic_none,
+                              color: _isListening
+                                  ? const Color(0xFF00D0B0)
+                                  : Colors.grey[400],
+                            ),
+                          ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        _isListening ? Icons.graphic_eq : Icons.mic_none,
+                        size: 14,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _isListening
+                            ? 'Listening... speak your trek'
+                            : 'Tip: Tap mic to search by voice',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -126,13 +247,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         ),
                         const SizedBox(height: 16),
                         SizedBox(
-                          height: 110,
+                          height: 182,
                           child: Consumer(
                             builder: (context, ref, child) {
                               final guidesAsync = ref.watch(guidesProvider);
                               return guidesAsync.when(
                                 data: (guides) {
                                   final topGuides = guides.take(5).toList();
+                                  if (topGuides.isEmpty) {
+                                    return const Center(
+                                      child: Text('No guides found'),
+                                    );
+                                  }
                                   return ListView.builder(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: topGuides.length,
@@ -169,13 +295,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                 children: const [
                                   Text(
                                     'More',
-                                    style: TextStyle(color: Color(0xFF00D0B0)),
+                                    style: TextStyle(
+                                      color: _brand,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   SizedBox(width: 4),
                                   Icon(
                                     Icons.arrow_forward,
                                     size: 16,
-                                    color: Color(0xFF00D0B0),
+                                    color: _brand,
                                   ),
                                 ],
                               ),
@@ -207,15 +336,30 @@ class _ExploreScreenState extends State<ExploreScreen> {
             return trekPackagesAsync.when(
               data: (state) {
                 final treks = state.treks;
-                if (treks == null || treks.isEmpty) {
-                  return const Text('No treks found');
+                final query = _searchQuery.toLowerCase();
+                final filteredTreks = query.isEmpty
+                    ? treks
+                    : treks.where((trek) {
+                        return trek.title.toLowerCase().contains(query) ||
+                            trek.location.toLowerCase().contains(query) ||
+                            trek.description.toLowerCase().contains(query) ||
+                            trek.difficulty.toLowerCase().contains(query) ||
+                            trek.category.toLowerCase().contains(query);
+                      }).toList();
+
+                if (filteredTreks.isEmpty) {
+                  return Text(
+                    query.isEmpty
+                        ? 'No treks found'
+                        : 'No treks match "$query"',
+                  );
                 }
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: treks.length,
+                  itemCount: filteredTreks.length,
                   itemBuilder: (context, index) {
-                    final trek = treks[index];
+                    final trek = filteredTreks[index];
                     final imageUrl = ApiEndpoints.getImageUrl(trek.imageUrl);
                     return InkWell(
                       onTap: () {
@@ -227,6 +371,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         );
                       },
                       child: Card(
+                        elevation: 0,
+                        color: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -239,7 +385,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                 topLeft: Radius.circular(16),
                                 topRight: Radius.circular(16),
                               ),
-                              child: imageUrl != null && imageUrl.isNotEmpty
+                              child: imageUrl.isNotEmpty
                                   ? Image.network(
                                       imageUrl,
                                       height: 180,
@@ -253,6 +399,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                                 child: const Center(
                                                   child: Icon(
                                                     Icons.broken_image,
+                                                    color: Colors.grey,
                                                   ),
                                                 ),
                                               ),
@@ -261,7 +408,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                       height: 180,
                                       color: Colors.grey[200],
                                       child: const Center(
-                                        child: Icon(Icons.image),
+                                        child: Icon(
+                                          Icons.image,
+                                          color: Colors.grey,
+                                        ),
                                       ),
                                     ),
                             ),
@@ -271,31 +421,85 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    trek.title ?? trek.id ?? 'Unknown Trek',
+                                    trek.title,
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.place_outlined,
+                                        size: 14,
+                                        color: Colors.grey,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          trek.location,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        '${trek.daysCount}D/${trek.nightsCount}N',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    trek.description ??
-                                        'No description available',
+                                    trek.description,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    trek.price != null
-                                        ? 'Rs ${trek.price}'
-                                        : 'Price not available',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _brand.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          trek.difficulty,
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF00A68C),
+                                          ),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        'Rs ${trek.price.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF111827),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -316,128 +520,102 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Widget _guideInfoCard(dynamic guide) {
-    // Use dynamic if Guide is not imported, otherwise use Guide
+  Widget _guideInfoCard(model.Guide guide) {
+    final rawGuideImage = guide.imageUrl?.trim() ?? '';
+    final guideImageUrl = rawGuideImage.isEmpty
+        ? ''
+        : (rawGuideImage.startsWith('http') || rawGuideImage.contains('/'))
+        ? ApiEndpoints.getImageUrl(rawGuideImage)
+        : ApiEndpoints.profilePicture(rawGuideImage);
+    final bio = guide.bio;
+    final languages = guide.languages;
+    final primaryLanguage = languages != null && languages.isNotEmpty
+        ? languages.first
+        : null;
+    final experienceYears = guide.experienceYears;
+
     return Container(
-      width: 240,
+      width: 176,
       margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
+            color: Colors.grey.withValues(alpha: 0.15),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
-            radius: 28,
-            backgroundImage: guide.imageUrl ?? guide.avatar ?? guide.photo ?? ''
-                ? NetworkImage(
-                    guide.imageUrl ?? guide.avatar ?? guide.photo ?? '',
-                  )
+            radius: 31,
+            backgroundImage: guideImageUrl.isNotEmpty
+                ? NetworkImage(guideImageUrl)
                 : const AssetImage('assets/images/guide_placeholder.png')
                       as ImageProvider,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  guide.name ?? 'Unknown',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+          const SizedBox(height: 10),
+          Text(
+            guide.name ?? 'Unknown',
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          if (bio != null && bio.isNotEmpty)
+            Text(
+              bio,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11.5, color: Colors.grey),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (experienceYears != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _brand.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${experienceYears}y exp',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF00A68C),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-                if (guide.bio != null && guide.bio.isNotEmpty)
-                  Text(
-                    guide.bio,
-                    maxLines: 2,
+              if (primaryLanguage != null) ...[
+                if (experienceYears != null) const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    primaryLanguage,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                if (guide.email != null && guide.email.isNotEmpty)
-                  Text(
-                    'Email: ${guide.email}',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                if (guide.phoneNumber != null && guide.phoneNumber.isNotEmpty)
-                  Text(
-                    'Phone: ${guide.phoneNumber}',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                if (guide.experienceYears != null)
-                  Text(
-                    'Exp: ${guide.experienceYears} yrs',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                if (guide.languages != null && guide.languages.isNotEmpty)
-                  Text(
-                    'Lang: ${guide.languages.join(", ")}',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                if (guide.createdAt != null)
-                  Text(
-                    'Joined: ${guide.createdAt.toString().substring(0, 10)}',
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-                if (guide.updatedAt != null)
-                  Text(
-                    'Updated: ${guide.updatedAt.toString().substring(0, 10)}',
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
+                ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _destinationCard(String title, String subtitle, String price) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-              height: 1.4,
-            ),
-            maxLines: 2,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            price,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
+            ],
           ),
         ],
       ),
