@@ -1,101 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:just_hike/core/services/storage/user_session_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:just_hike/core/api/api_endpoints.dart';
+import 'package:just_hike/features/dashboard/presentation/providers/local_trips_provider.dart';
 
 class MyTripsScreen extends ConsumerStatefulWidget {
+  const MyTripsScreen({super.key});
+
   @override
   ConsumerState<MyTripsScreen> createState() => _MyTripsScreenState();
 }
 
 class _MyTripsScreenState extends ConsumerState<MyTripsScreen> {
-  List bookings = [];
-  bool isLoading = true;
   int selectedTab = 0; // 0 = Treks, 1 = Wishlist
 
   @override
-  void initState() {
-    super.initState();
-    fetchBookings();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    fetchBookings();
-  }
-
-  Future<void> fetchBookings() async {
-    setState(() {
-      isLoading = true;
-    });
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = await UserSessionService(prefs: prefs).getAccessToken();
-      final response = await http.get(
-        Uri.parse('http://10.0.2.2:5050/api/bookings/me'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        List bookingsList = data is List ? data : [];
-        print('Fetched bookings:');
-        print(bookingsList);
-        // Fetch trek details for each booking if missing
-        for (var booking in bookingsList) {
-          if (booking['trek'] == null && booking['trekId'] != null) {
-            print('Fetching trek details for trekId: ${booking['trekId']}');
-            final trekResponse = await http.get(
-              Uri.parse('http://10.0.2.2:5050/api/treks/${booking['trekId']}'),
-            );
-            if (trekResponse.statusCode == 200) {
-              print('Fetched trek details:');
-              print(json.decode(trekResponse.body));
-              booking['trek'] = json.decode(trekResponse.body);
-            }
-            print(
-              'Failed to fetch trek details for trekId: ${booking['trekId']}',
-            );
-          }
-        }
-        setState(() {
-          print('Final bookings with trek details:');
-          print(bookingsList);
-          bookings = bookingsList;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          bookings = [];
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        bookings = [];
-        isLoading = false;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final Color primaryColor = Color(0xFF20D6C6);
+    final localTrips = ref.watch(localTripsProvider);
     final Color tabBg = Color(0xFFF9F6F6);
     final Color selectedTabColor = Color(0xFF20D6C6);
     final Color unselectedTabColor = Color(0xFFBDBDBD);
 
     // Group bookings into upcoming and past
     final now = DateTime.now();
+    final bookings = localTrips.bookings;
+    final wishlist = localTrips.wishlist;
+
     List upcoming = bookings.where((b) {
-      final start = DateTime.tryParse(b['startDate'] ?? '') ?? now;
-      return start.isAfter(now);
+      final start = _resolveBookingStartDate(b);
+      return start == null || !start.isBefore(now);
     }).toList();
     List past = bookings.where((b) {
-      final start = DateTime.tryParse(b['startDate'] ?? '') ?? now;
-      return start.isBefore(now);
+      final start = _resolveBookingStartDate(b);
+      return start != null && start.isBefore(now);
     }).toList();
 
     return Scaffold(
@@ -124,183 +60,200 @@ class _MyTripsScreenState extends ConsumerState<MyTripsScreen> {
         ),
       ),
       body: SafeArea(
-        child: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: fetchBookings,
-                child: SingleChildScrollView(
-                  physics: AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: tabBg,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => setState(() => selectedTab = 0),
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
+        child: RefreshIndicator(
+          onRefresh: () =>
+              ref.read(localTripsProvider.notifier).reloadFromStorage(),
+          child: SingleChildScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: tabBg,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => selectedTab = 0),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: selectedTab == 0
+                                    ? selectedTabColor
+                                    : tabBg,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.hiking,
+                                    color: selectedTab == 0
+                                        ? Colors.white
+                                        : unselectedTabColor,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Treks',
+                                    style: TextStyle(
                                       color: selectedTab == 0
-                                          ? selectedTabColor
-                                          : tabBg,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.hiking,
-                                          color: selectedTab == 0
-                                              ? Colors.white
-                                              : unselectedTabColor,
-                                        ),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          'Treks',
-                                          style: TextStyle(
-                                            color: selectedTab == 0
-                                                ? Colors.white
-                                                : unselectedTabColor,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
+                                          ? Colors.white
+                                          : unselectedTabColor,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => setState(() => selectedTab = 1),
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: selectedTab == 1
-                                          ? selectedTabColor
-                                          : tabBg,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.favorite_border,
-                                          color: selectedTab == 1
-                                              ? Colors.white
-                                              : unselectedTabColor,
-                                        ),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          'Wishlist',
-                                          style: TextStyle(
-                                            color: selectedTab == 1
-                                                ? Colors.white
-                                                : unselectedTabColor,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                      if (selectedTab == 0) ...[
-                        if (upcoming.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: Text(
-                              'Upcoming Treks',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => selectedTab = 1),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: selectedTab == 1
+                                    ? selectedTabColor
+                                    : tabBg,
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ),
-                          ),
-                        if (upcoming.isNotEmpty)
-                          ...upcoming
-                              .map(
-                                (booking) => _tripCard(context, booking, true),
-                              )
-                              .toList(),
-                        if (past.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: Text(
-                              'Past Treks',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.favorite_border,
+                                    color: selectedTab == 1
+                                        ? Colors.white
+                                        : unselectedTabColor,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Wishlist',
+                                    style: TextStyle(
+                                      color: selectedTab == 1
+                                          ? Colors.white
+                                          : unselectedTabColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ),
-                        if (past.isNotEmpty)
-                          ...past
-                              .map(
-                                (booking) => _tripCard(context, booking, false),
-                              )
-                              .toList(),
-                        if (upcoming.isEmpty && past.isEmpty)
-                          Center(
-                            child: Padding(
-                              padding: EdgeInsets.only(top: 48),
-                              child: Text(
-                                'No trips found',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                          ),
-                      ] else ...[
-                        // Wishlist tab placeholder
-                        SizedBox(
-                          height: 300,
-                          child: Center(
-                            child: Text(
-                              'Wishlist is empty',
-                              style: TextStyle(color: Colors.grey),
                             ),
                           ),
                         ),
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                if (selectedTab == 0) ...[
+                  if (upcoming.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Text(
+                        'Upcoming Treks',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  if (upcoming.isNotEmpty)
+                    ...upcoming.map(
+                      (booking) => _tripCard(context, booking, true),
+                    ),
+                  if (past.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Text(
+                        'Past Treks',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  if (past.isNotEmpty)
+                    ...past.map(
+                      (booking) => _tripCard(context, booking, false),
+                    ),
+                  if (upcoming.isEmpty && past.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 48),
+                        child: Text(
+                          'No booked treks yet',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                ] else ...[
+                  if (wishlist.isEmpty)
+                    const SizedBox(
+                      height: 300,
+                      child: Center(
+                        child: Text(
+                          'Wishlist is empty',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  else
+                    ...wishlist.map(
+                      (trek) => _wishlistCard(
+                        context,
+                        Map<String, dynamic>.from(trek),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _tripCard(BuildContext context, Map booking, bool isUpcoming) {
-    final trek = booking['trek'] ?? {};
-    final imageUrl = fixImageUrl(trek['imageUrl'] ?? '');
-    final tripName = trek['name'] ?? trek['_id'] ?? 'Unknown Trek';
-    final startDate = booking['startDate'] ?? '';
-    final endDate = booking['endDate'] ?? '';
-    final days = trek['days'] ?? '';
-    final tripType = trek['type'] ?? '';
-    final status = booking['status'] ?? '';
+    final trek = _extractBookingTrek(booking);
+    final imageUrl = fixImageUrl(
+      (trek['imageUrl'] ?? trek['thumbnailUrl'] ?? '').toString(),
+    );
+    final tripName =
+        (trek['title'] ?? trek['name'] ?? trek['_id'] ?? 'Unknown Trek')
+            .toString();
+    final startDate = (_resolveDateString(
+      booking,
+      keys: const ['startDate', 'tripStartDate', 'date'],
+      fallback: _resolveDateString(
+        trek,
+        keys: const ['startDate', 'tripStartDate', 'date'],
+      ),
+    ));
+    final endDate = _resolveDateString(
+      booking,
+      keys: const ['endDate', 'tripEndDate'],
+      fallback: _resolveDateString(
+        trek,
+        keys: const ['endDate', 'tripEndDate'],
+      ),
+    );
+    final days = (trek['durationDays'] ?? trek['daysCount'] ?? '').toString();
+    final tripType = (trek['difficulty'] ?? trek['type'] ?? '').toString();
     final now = DateTime.now();
     DateTime? start = DateTime.tryParse(startDate);
     String tripInfo = '';
@@ -319,12 +272,13 @@ class _MyTripsScreenState extends ConsumerState<MyTripsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Container(
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
+              color: Colors.grey.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: Offset(0, 2),
             ),
@@ -332,26 +286,26 @@ class _MyTripsScreenState extends ConsumerState<MyTripsScreen> {
           border: Border.all(color: Color(0xFFE0E0E0)),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: imageUrl.isNotEmpty
                   ? Image.network(
                       imageUrl,
-                      width: 80,
-                      height: 64,
+                      width: 92,
+                      height: 92,
                       fit: BoxFit.cover,
                       errorBuilder: (c, e, s) => Container(
-                        width: 80,
-                        height: 64,
+                        width: 92,
+                        height: 92,
                         color: Colors.grey[300],
                         child: Icon(Icons.broken_image, color: Colors.grey),
                       ),
                     )
                   : Container(
-                      width: 80,
-                      height: 64,
+                      width: 92,
+                      height: 92,
                       color: Colors.grey[300],
                       child: Icon(Icons.image, color: Colors.grey),
                     ),
@@ -404,8 +358,133 @@ class _MyTripsScreenState extends ConsumerState<MyTripsScreen> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.favorite_border, color: Color(0xFF20D6C6)),
-              onPressed: () {},
+              icon: Icon(
+                ref
+                        .watch(localTripsProvider)
+                        .isWishlisted((trek['id'] ?? '').toString())
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: Color(0xFF20D6C6),
+              ),
+              onPressed: () async {
+                final added = await ref
+                    .read(localTripsProvider.notifier)
+                    .toggleWishlistFromMap(Map<String, dynamic>.from(trek));
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      added ? 'Added to wishlist' : 'Removed from wishlist',
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _wishlistCard(BuildContext context, Map<String, dynamic> trek) {
+    final imageUrl = fixImageUrl(
+      (trek['imageUrl'] ?? trek['thumbnailUrl'] ?? '').toString(),
+    );
+    final title = (trek['title'] ?? trek['name'] ?? 'Unknown Trek').toString();
+    final location = (trek['location'] ?? 'Nepal').toString();
+    final days = (trek['daysCount'] ?? trek['durationDays'] ?? '').toString();
+    final rating = ((trek['rating'] ?? 0) as num).toDouble();
+    final price = ((trek['price'] ?? 0) as num).toDouble();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE0E0E0)),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      width: 88,
+                      height: 72,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => Container(
+                        width: 88,
+                        height: 72,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.broken_image),
+                      ),
+                    )
+                  : Container(
+                      width: 88,
+                      height: 72,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.image),
+                    ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    days.isNotEmpty ? '$location - $days Days' : location,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                  ),
+                  const SizedBox(height: 4),
+                  if (rating > 0)
+                    Row(
+                      children: [
+                        Text(
+                          rating.toStringAsFixed(1),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          '★ ★ ★ ★ ★',
+                          style: TextStyle(
+                            color: Colors.amber,
+                            fontSize: 11,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Rs.${price.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      color: Color(0xFF20D6C6),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.favorite, color: Color(0xFF20D6C6)),
+              onPressed: () async {
+                await ref
+                    .read(localTripsProvider.notifier)
+                    .toggleWishlistFromMap(Map<String, dynamic>.from(trek));
+              },
             ),
           ],
         ),
@@ -448,20 +527,62 @@ class _MyTripsScreenState extends ConsumerState<MyTripsScreen> {
   // Fixes or completes the image URL if needed
   String fixImageUrl(String url) {
     if (url.isEmpty) return '';
-    if (url.startsWith('http')) return url;
-    // Use your actual API base URL for local dev
-    const String baseUrl = 'http://10.0.2.2:5050/';
-    return baseUrl + url;
+    final normalized = url.toLowerCase();
+    // Ignore backend placeholder paths that often do not exist.
+    if (normalized.contains('default-profile.png')) return '';
+    return ApiEndpoints.getImageUrl(url);
   }
-}
 
-class UserSessionService {
-  final SharedPreferences prefs;
+  DateTime? _resolveBookingStartDate(dynamic booking) {
+    if (booking is! Map) return null;
+    final map = Map<String, dynamic>.from(booking);
+    final trek = _extractBookingTrek(map);
+    final startDate = _resolveDateString(
+      map,
+      keys: const ['startDate', 'tripStartDate', 'date'],
+      fallback: _resolveDateString(
+        trek,
+        keys: const ['startDate', 'tripStartDate', 'date'],
+      ),
+    );
+    return DateTime.tryParse(startDate);
+  }
 
-  UserSessionService({required this.prefs});
+  String _resolveDateString(
+    Map source, {
+    required List<String> keys,
+    String fallback = '',
+  }) {
+    for (final key in keys) {
+      final value = source[key];
+      if (value is String && value.isNotEmpty) {
+        return value;
+      }
+    }
+    return fallback;
+  }
 
-  Future<String?> getAccessToken() async {
-    // Replace 'access_token' with your actual key
-    return prefs.getString('access_token');
+  Map<String, dynamic> _extractBookingTrek(Map booking) {
+    final dynamic trekField = booking['trek'];
+    if (trekField is Map) {
+      return Map<String, dynamic>.from(trekField);
+    }
+
+    final dynamic packageField = booking['package'];
+    if (packageField is Map) {
+      return Map<String, dynamic>.from(packageField);
+    }
+
+    final dynamic dataField = booking['data'];
+    if (dataField is Map) {
+      if (dataField['trek'] is Map) {
+        return Map<String, dynamic>.from(dataField['trek'] as Map);
+      }
+      if (dataField['package'] is Map) {
+        return Map<String, dynamic>.from(dataField['package'] as Map);
+      }
+    }
+
+    return <String, dynamic>{};
   }
 }
