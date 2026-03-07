@@ -156,19 +156,35 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
       );
 
       if (response.data['success'] == true) {
-        final data = response.data['data'] as Map<String, dynamic>;
-        final updatedUser = AuthApiModel.fromJson(data);
+        final dynamic dataRaw = response.data['data'];
+        final Map<String, dynamic> data = dataRaw is Map<String, dynamic>
+            ? dataRaw
+            : <String, dynamic>{};
+        final Map<String, dynamic> userMap =
+            data['user'] is Map<String, dynamic>
+            ? data['user'] as Map<String, dynamic>
+            : data;
+        final mergedUser = <String, dynamic>{...data, ...userMap};
+        if (response.data['token'] != null && mergedUser['token'] == null) {
+          mergedUser['token'] = response.data['token'];
+        }
+
+        final updatedUser = AuthApiModel.fromJson(mergedUser);
 
         // Get token for session update
         const storage = FlutterSecureStorage();
         final token = await storage.read(key: 'auth_token');
 
-        if (updatedUser.userAuthId != null) {
+        final userId =
+            updatedUser.userAuthId ?? _userSessionService.getUserId();
+        if (userId != null) {
           await _userSessionService.saveUserSession(
-            userId: updatedUser.userAuthId!,
-            email: updatedUser.email,
-            fullName: updatedUser.fullName,
-            phoneNumber: updatedUser.phoneNumber,
+            userId: userId,
+            email: updatedUser.email.isNotEmpty ? updatedUser.email : email,
+            fullName: updatedUser.fullName.isNotEmpty
+                ? updatedUser.fullName
+                : fullName,
+            phoneNumber: updatedUser.phoneNumber ?? phoneNumber,
             profileImage: updatedUser.profilePicture,
             authToken: token,
           );
