@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_hike/core/error/failures.dart';
@@ -31,27 +33,31 @@ void main() {
     );
 
     setUpAll(() {
-      registerFallbackValue(const UserAuthEntity(
-        userAuthId: 'fallback',
-        fullName: 'Fallback User',
-        email: 'fallback@example.com',
-        password: 'fallbackPass',
-        phoneNumber: '0000000000',
-      ));
+      registerFallbackValue(
+        const UserAuthEntity(
+          userAuthId: 'fallback',
+          fullName: 'Fallback User',
+          email: 'fallback@example.com',
+          password: 'fallbackPass',
+          phoneNumber: '0000000000',
+        ),
+      );
     });
 
     setUp(() {
       mockRepository = MockAuthRepository();
       loginUsecase = LoginUsecase(authRepository: mockRepository);
       registerUsecase = RegisterUsecase(authRepository: mockRepository);
-      updateProfileUsecase = UpdateProfileUsecase(authRepository: mockRepository);
+      updateProfileUsecase = UpdateProfileUsecase(
+        authRepository: mockRepository,
+      );
     });
 
     test('LoginUsecase should return user on success', () async {
       // Arrange
-      when(() => mockRepository.login(tEmail, tPassword)).thenAnswer(
-        (_) async => const Right(tUser),
-      );
+      when(
+        () => mockRepository.login(tEmail, tPassword),
+      ).thenAnswer((_) async => const Right(tUser));
 
       // Act
       final result = await loginUsecase(
@@ -67,9 +73,9 @@ void main() {
     test('LoginUsecase should return failure on error', () async {
       // Arrange
       const failure = ApiFailure(message: 'Invalid credentials');
-      when(() => mockRepository.login(tEmail, tPassword)).thenAnswer(
-        (_) async => const Left(failure),
-      );
+      when(
+        () => mockRepository.login(tEmail, tPassword),
+      ).thenAnswer((_) async => const Left(failure));
 
       // Act
       final result = await loginUsecase(
@@ -160,5 +166,210 @@ void main() {
       expect(params1, params2);
       expect(params1.props, [tFullName, tEmail, tPassword]);
     });
+
+    test('LoginUsecaseParams with same data should be equal', () {
+      const params1 = LoginUsecaseParams(email: tEmail, password: tPassword);
+      const params2 = LoginUsecaseParams(email: tEmail, password: tPassword);
+
+      expect(params1, params2);
+      expect(params1.props, [tEmail, tPassword]);
+    });
+
+    test('UpdateProfileUsecaseParams with same data should be equal', () {
+      const params1 = UpdateProfileUsecaseParams(
+        fullName: tFullName,
+        email: tEmail,
+        phoneNumber: tPhoneNumber,
+      );
+      const params2 = UpdateProfileUsecaseParams(
+        fullName: tFullName,
+        email: tEmail,
+        phoneNumber: tPhoneNumber,
+      );
+
+      expect(params1, params2);
+      expect(params1.props, [tFullName, tEmail, tPhoneNumber, null]);
+    });
+
+    test('RegisterUsecase should return true on success', () async {
+      when(
+        () => mockRepository.register(any()),
+      ).thenAnswer((_) async => const Right(true));
+
+      final result = await registerUsecase(
+        const RegisterUsecaseParams(
+          fullName: tFullName,
+          email: tEmail,
+          password: tPassword,
+        ),
+      );
+
+      expect(result, const Right(true));
+      verify(() => mockRepository.register(any())).called(1);
+      verifyNoMoreInteractions(mockRepository);
+    });
+
+    test('RegisterUsecase should return failure on repository error', () async {
+      const failure = ApiFailure(message: 'Registration failed');
+      when(
+        () => mockRepository.register(any()),
+      ).thenAnswer((_) async => const Left(failure));
+
+      final result = await registerUsecase(
+        const RegisterUsecaseParams(
+          fullName: tFullName,
+          email: tEmail,
+          password: tPassword,
+        ),
+      );
+
+      expect(result, const Left(failure));
+      verify(() => mockRepository.register(any())).called(1);
+      verifyNoMoreInteractions(mockRepository);
+    });
+
+    test(
+      'UpdateProfileUsecase should return failure on repository error',
+      () async {
+        const failure = ApiFailure(message: 'Profile update failed');
+        when(
+          () => mockRepository.updateProfile(
+            fullName: tFullName,
+            email: tEmail,
+            phoneNumber: tPhoneNumber,
+            profileImage: null,
+          ),
+        ).thenAnswer((_) async => const Left(failure));
+
+        final result = await updateProfileUsecase(
+          const UpdateProfileUsecaseParams(
+            fullName: tFullName,
+            email: tEmail,
+            phoneNumber: tPhoneNumber,
+          ),
+        );
+
+        expect(result, const Left(failure));
+        verify(
+          () => mockRepository.updateProfile(
+            fullName: tFullName,
+            email: tEmail,
+            phoneNumber: tPhoneNumber,
+            profileImage: null,
+          ),
+        ).called(1);
+        verifyNoMoreInteractions(mockRepository);
+      },
+    );
+
+    test(
+      'LoginUsecase should forward exact email and password values',
+      () async {
+        String? capturedEmail;
+        String? capturedPassword;
+
+        when(() => mockRepository.login(any(), any())).thenAnswer((
+          invocation,
+        ) async {
+          capturedEmail = invocation.positionalArguments[0] as String;
+          capturedPassword = invocation.positionalArguments[1] as String;
+          return const Right(tUser);
+        });
+
+        await loginUsecase(
+          const LoginUsecaseParams(email: tEmail, password: tPassword),
+        );
+
+        expect(capturedEmail, tEmail);
+        expect(capturedPassword, tPassword);
+        verify(() => mockRepository.login(any(), any())).called(1);
+      },
+    );
+
+    test('RegisterUsecaseParams with different data should not be equal', () {
+      const params1 = RegisterUsecaseParams(
+        fullName: tFullName,
+        email: tEmail,
+        password: tPassword,
+      );
+      const params2 = RegisterUsecaseParams(
+        fullName: 'Another User',
+        email: tEmail,
+        password: tPassword,
+      );
+
+      expect(params1 == params2, false);
+      expect(params1, isNot(params2));
+    });
+
+    test('LoginUsecaseParams with different passwords should not be equal', () {
+      const params1 = LoginUsecaseParams(email: tEmail, password: tPassword);
+      const params2 = LoginUsecaseParams(
+        email: tEmail,
+        password: 'newPassword!',
+      );
+
+      expect(params1 == params2, false);
+      expect(params1, isNot(params2));
+    });
+
+    test(
+      'UpdateProfileUsecase should pass profileImage through to repository',
+      () async {
+        final tImage = File('test_profile.jpg');
+
+        when(
+          () => mockRepository.updateProfile(
+            fullName: tFullName,
+            email: tEmail,
+            phoneNumber: tPhoneNumber,
+            profileImage: tImage,
+          ),
+        ).thenAnswer((_) async => const Right(tUser));
+
+        final result = await updateProfileUsecase(
+          UpdateProfileUsecaseParams(
+            fullName: tFullName,
+            email: tEmail,
+            phoneNumber: tPhoneNumber,
+            profileImage: tImage,
+          ),
+        );
+
+        expect(result, const Right(tUser));
+        verify(
+          () => mockRepository.updateProfile(
+            fullName: tFullName,
+            email: tEmail,
+            phoneNumber: tPhoneNumber,
+            profileImage: tImage,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'UpdateProfileUsecaseParams should include profileImage in equality',
+      () {
+        final image1 = File('a.jpg');
+        final image2 = File('b.jpg');
+
+        final params1 = UpdateProfileUsecaseParams(
+          fullName: tFullName,
+          email: tEmail,
+          phoneNumber: tPhoneNumber,
+          profileImage: image1,
+        );
+        final params2 = UpdateProfileUsecaseParams(
+          fullName: tFullName,
+          email: tEmail,
+          phoneNumber: tPhoneNumber,
+          profileImage: image2,
+        );
+
+        expect(params1 == params2, false);
+        expect(params1, isNot(params2));
+      },
+    );
   });
 }
