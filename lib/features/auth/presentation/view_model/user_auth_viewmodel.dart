@@ -10,15 +10,13 @@ final authViewmodelProvider = NotifierProvider<AuthViewmodel, AuthState>(
 );
 
 class AuthViewmodel extends Notifier<AuthState> {
-  late final RegisterUsecase _registerUsecase;
-  late final LoginUsecase _loginUsecase;
-  late final UpdateProfileUsecase _updateProfileUsecase;
+  RegisterUsecase get _registerUsecase => ref.read(registerUsecaseProvider);
+  LoginUsecase get _loginUsecase => ref.read(loginUsecaseProvider);
+  UpdateProfileUsecase get _updateProfileUsecase =>
+      ref.read(updateProfileUsecaseProvider);
 
   @override
   AuthState build() {
-    _registerUsecase = ref.read(registerUsecaseProvider);
-    _loginUsecase = ref.read(loginUsecaseProvider);
-    _updateProfileUsecase = ref.read(updateProfileUsecaseProvider);
     return AuthState();
   }
 
