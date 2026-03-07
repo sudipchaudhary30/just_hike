@@ -8,7 +8,6 @@ import 'package:just_hike/features/editprofile/presentation/pages/editprofile_sc
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class MockSharedPreferences extends Mock implements SharedPreferences {}
 
 // Test Notifier for AuthViewmodel
@@ -128,5 +127,24 @@ void main() {
     expect(find.text('Change Profile Picture'), findsOneWidget);
 
     expect(find.byIcon(Icons.camera_alt), findsWidgets);
+  });
+
+  testWidgets('Should show prefilled user profile values', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(mockSharedPreferences),
+          authViewmodelProvider.overrideWith(() => TestAuthNotifier()),
+        ],
+        child: const MaterialApp(home: Editprofile()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sudip Chaudhary'), findsOneWidget);
+    expect(find.text('sudip253@gmail.com'), findsOneWidget);
+    expect(find.text('+977 9876543210'), findsOneWidget);
   });
 }
