@@ -80,46 +80,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 child: Container(
                   height: 240,
                   decoration: BoxDecoration(
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    image: const DecorationImage(
-                      image: AssetImage("assets/images/logo.png"),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    alignment: Alignment.bottomLeft,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withOpacity(0.6),
-                          Colors.transparent,
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-
-                    child: const Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Shey Phoksundo Lake Trek",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "40 percent Off Summer Escapes",
-                          style: TextStyle(fontSize: 14, color: Colors.white70),
-                        ),
-                      ],
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Image.asset(
+                      'assets/images/logo_justhike.png',
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -259,7 +235,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     children: [
                       const Text("Already have an account?"),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
+                          );
+                        },
                         child: const Text(
                           "Login",
                           style: TextStyle(
