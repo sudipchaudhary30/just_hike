@@ -10,6 +10,10 @@ import 'package:just_hike/features/dashboard/presentation/screens/bottom_screen/
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
+  Future<void> _refreshTreks(WidgetRef ref) async {
+    await ref.refresh(trekPackagesProvider.future);
+  }
+
   String getTrekImageUrl(PackageEntity trek) {
     final path = trek.imageUrl ?? trek.thumbnailUrl;
     if (path != null && path.isNotEmpty) {
@@ -56,6 +60,10 @@ class HomeScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black),
+            onPressed: () => _refreshTreks(ref),
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black),
             onPressed: () {},
           ),
@@ -66,105 +74,136 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: trekPackagesAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                const SizedBox(height: 16),
-                Text(
-                  'Error: $error',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.refresh(trekPackagesProvider),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00D0B0),
-                  ),
-                  child: const Text('Retry'),
+        child: RefreshIndicator(
+          onRefresh: () => _refreshTreks(ref),
+          child: trekPackagesAsync.when(
+            loading: () => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(
+                  height: 400,
+                  child: Center(child: CircularProgressIndicator()),
                 ),
               ],
             ),
-          ),
-          data: (state) {
-            if (state.errorMessage != null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Error: ${state.errorMessage}'),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => ref.refresh(trekPackagesProvider),
-                      child: const Text('Retry'),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: $error',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => _refreshTreks(ref),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00D0B0),
                     ),
-                  ],
-                ),
-              );
-            }
-
-            if (state.treks.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+            data: (state) {
+              if (state.errorMessage != null) {
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: [
-                    Icon(Icons.hiking, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
-                      'No treks available',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildBanner(
-                        context,
-                        state.treks.first,
-                        maxWidth: constraints.maxWidth,
-                      ),
-                      const SizedBox(height: 24),
-                      _sectionHeader('Popular Treks'),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 260,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: state.treks.length > 5
-                              ? 5
-                              : state.treks.length,
-                          itemBuilder: (context, index) {
-                            return _popularTrekCard(
-                              context,
-                              state.treks[index],
-                            );
-                          },
+                    SizedBox(
+                      height: 400,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Error: ${state.errorMessage}'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => _refreshTreks(ref),
+                              child: const Text('Retry'),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      _sectionHeader('All Treks'),
-                      const SizedBox(height: 12),
-                      ...state.treks.map((trek) {
-                        return _recommendedTrekCard(context, trek);
-                      }).toList(),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
-              },
-            );
-          },
+              }
+
+              if (state.treks.isEmpty) {
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(
+                      height: 400,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.hiking, size: 64, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text(
+                              'No treks available',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildBanner(
+                          context,
+                          state.treks.first,
+                          maxWidth: constraints.maxWidth,
+                        ),
+                        const SizedBox(height: 24),
+                        _sectionHeader('Popular Treks'),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 260,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: state.treks.length > 5
+                                ? 5
+                                : state.treks.length,
+                            itemBuilder: (context, index) {
+                              return _popularTrekCard(
+                                context,
+                                state.treks[index],
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _sectionHeader('All Treks'),
+                        const SizedBox(height: 12),
+                        ...state.treks.map((trek) {
+                          return _recommendedTrekCard(context, trek);
+                        }).toList(),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
