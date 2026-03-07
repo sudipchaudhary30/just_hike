@@ -3,6 +3,7 @@ import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_hike/features/dashboard/presentation/providers/booking_provider.dart';
 import 'package:just_hike/features/dashboard/presentation/providers/my_bookings_provider.dart'; // Ensure this file exists and exports 'myBookingsProvider'
+import 'package:just_hike/features/dashboard/presentation/providers/local_trips_provider.dart';
 
 import 'package:just_hike/core/services/storage/user_session_service.dart';
 
@@ -201,10 +202,28 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         'participants': adults + children,
       };
 
+      await ref
+          .read(localTripsProvider.notifier)
+          .addBooking(
+            trek: widget.trek,
+            startDate: fromDate!,
+            participants: adults + children,
+          );
+
       print('Booking data being sent:');
       print(bookingData);
-      final bookingRepo = ref.read(bookingProvider);
-      await bookingRepo.saveBooking(bookingData);
+      try {
+        final bookingRepo = ref.read(bookingProvider);
+        await bookingRepo.saveBooking(bookingData);
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Booked locally. Server sync failed.'),
+            ),
+          );
+        }
+      }
 
       await showDialog(
         context: context,
