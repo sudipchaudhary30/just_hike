@@ -1,25 +1,125 @@
-import 'package:flutter/material.dart';
-import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart';
-import 'package:just_hike/core/api/api_endpoints.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:just_hike/features/dashboard/presentation/screens/booking_screen.dart';
+import 'dart:async';
+import 'dart:math' as math;
 
-class TrekDetailScreen extends StatelessWidget {
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_hike/core/api/api_endpoints.dart';
+import 'package:just_hike/features/dashboard/domain/entities/package_entity.dart';
+import 'package:just_hike/features/dashboard/presentation/providers/local_trips_provider.dart';
+import 'package:just_hike/features/dashboard/presentation/screens/booking_screen.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+
+class TrekDetailScreen extends ConsumerStatefulWidget {
   final PackageEntity trek;
   const TrekDetailScreen({Key? key, required this.trek}) : super(key: key);
 
   @override
+  ConsumerState<TrekDetailScreen> createState() => _TrekDetailScreenState();
+}
+
+class _TrekDetailScreenState extends ConsumerState<TrekDetailScreen> {
+  static const double _shakeThreshold = 24;
+  static const int _shakeCooldownMs = 2000;
+
+  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+  int _lastShakeAtMs = 0;
+  bool _isShakeDialogOpen = false;
+  bool _hasShownInitialShakeTip = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startShakeListener();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _hasShownInitialShakeTip) return;
+      _hasShownInitialShakeTip = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tip: Shake your phone on this page to quick book.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _accelerometerSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _startShakeListener() {
+    _accelerometerSubscription = accelerometerEvents.listen((event) {
+      final magnitude = math.sqrt(
+        (event.x * event.x) + (event.y * event.y) + (event.z * event.z),
+      );
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final isPastCooldown = (nowMs - _lastShakeAtMs) > _shakeCooldownMs;
+      if (magnitude > _shakeThreshold &&
+          isPastCooldown &&
+          !_isShakeDialogOpen) {
+        _lastShakeAtMs = nowMs;
+        _showShakeBookingDialog();
+      }
+    });
+  }
+
+  Future<void> _showShakeBookingDialog() async {
+    if (!mounted) return;
+    _isShakeDialogOpen = true;
+    final shouldBook = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Quick Book'),
+          content: const Text(
+            'Shake detected. Do you want to continue to booking?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D0B0),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Book Now'),
+            ),
+          ],
+        );
+      },
+    );
+    _isShakeDialogOpen = false;
+    if (shouldBook == true && mounted) {
+      _openBookingScreen();
+    }
+  }
+
+  void _openBookingScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => BookingScreen(trek: widget.trek)),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // DEBUG: Print everything about the trek entity
+    final isWishlisted = ref.watch(
+      localTripsProvider.select((state) => state.isWishlisted(widget.trek.id)),
+    );
+
     print('========== TREK DETAIL DEBUG ==========');
-    print('Trek Title: ${trek.title}');
-    print('Trek ID: ${trek.id}');
-    print('imageUrl: ${trek.imageUrl}');
-    print('thumbnailUrl: ${trek.thumbnailUrl}');
+    print('Trek Title: ${widget.trek.title}');
+    print('Trek ID: ${widget.trek.id}');
+    print('imageUrl: ${widget.trek.imageUrl}');
+    print('thumbnailUrl: ${widget.trek.thumbnailUrl}');
     print('=======================================');
 
-    // Try multiple possible image sources
-    String? imagePath = trek.imageUrl ?? trek.thumbnailUrl;
+    String? imagePath = widget.trek.imageUrl ?? widget.trek.thumbnailUrl;
     print('Selected image path: $imagePath');
 
     final imageUrl = imagePath != null && imagePath.isNotEmpty
@@ -32,13 +132,34 @@ class TrekDetailScreen extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // App Bar with image
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
+            actions: [
+              IconButton(
+                icon: Icon(
+                  isWishlisted ? Icons.favorite : Icons.favorite_border,
+                  color: isWishlisted ? Colors.redAccent : Colors.white,
+                ),
+                onPressed: () async {
+                  final added = await ref
+                      .read(localTripsProvider.notifier)
+                      .toggleWishlist(widget.trek);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        added ? 'Added to wishlist' : 'Removed from wishlist',
+                      ),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                trek.title,
+                widget.trek.title,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -48,7 +169,6 @@ class TrekDetailScreen extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Background Image
                   imageUrl.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: imageUrl,
@@ -93,12 +213,7 @@ class TrekDetailScreen extends StatelessWidget {
                             );
                           },
                         )
-                      : Image.asset(
-                          '', // <-- your default asset
-                          fit: BoxFit.cover,
-                        ),
-
-                  // Gradient overlay
+                      : Image.asset('', fit: BoxFit.cover),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -115,20 +230,17 @@ class TrekDetailScreen extends StatelessWidget {
               ),
             ),
           ),
-
-          // Rest of your content remains the same...
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Price and Duration
                 Row(
                   children: [
                     Expanded(
                       child: _infoCard(
                         icon: Icons.attach_money,
                         label: 'Price',
-                        value: 'NPR ${trek.price.toStringAsFixed(0)}',
+                        value: 'NPR ${widget.trek.price.toStringAsFixed(0)}',
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -136,21 +248,20 @@ class TrekDetailScreen extends StatelessWidget {
                       child: _infoCard(
                         icon: Icons.calendar_today,
                         label: 'Duration',
-                        value: '${trek.daysCount}D/${trek.nightsCount}N',
+                        value:
+                            '${widget.trek.daysCount}D/${widget.trek.nightsCount}N',
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // Location and Difficulty
                 Row(
                   children: [
                     Expanded(
                       child: _infoCard(
                         icon: Icons.location_on,
                         label: 'Location',
-                        value: trek.location,
+                        value: widget.trek.location,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -158,22 +269,20 @@ class TrekDetailScreen extends StatelessWidget {
                       child: _infoCard(
                         icon: Icons.terrain,
                         label: 'Difficulty',
-                        value: trek.difficulty,
-                        color: _getDifficultyColor(trek.difficulty),
+                        value: widget.trek.difficulty,
+                        color: _getDifficultyColor(widget.trek.difficulty),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // Description
                 const Text(
                   'Description',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  trek.description,
+                  widget.trek.description,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
@@ -181,16 +290,15 @@ class TrekDetailScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Overview
-                if (trek.overview != null && trek.overview!.isNotEmpty) ...[
+                if (widget.trek.overview != null &&
+                    widget.trek.overview!.isNotEmpty) ...[
                   const Text(
                     'Overview',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    trek.overview!,
+                    widget.trek.overview!,
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.black87,
@@ -199,16 +307,15 @@ class TrekDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                 ],
-
-                // Itinerary
-                if (trek.itinerary != null && trek.itinerary!.isNotEmpty) ...[
+                if (widget.trek.itinerary != null &&
+                    widget.trek.itinerary!.isNotEmpty) ...[
                   const Text(
                     'Itinerary',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    trek.itinerary!,
+                    widget.trek.itinerary!,
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.black87,
@@ -217,15 +324,14 @@ class TrekDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                 ],
-
-                // Highlights
-                if (trek.highlights != null && trek.highlights!.isNotEmpty) ...[
+                if (widget.trek.highlights != null &&
+                    widget.trek.highlights!.isNotEmpty) ...[
                   const Text(
                     'Highlights',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  ...trek.highlights!.map(
+                  ...widget.trek.highlights!.map(
                     (highlight) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
@@ -249,9 +355,7 @@ class TrekDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                 ],
-
-                // Max Group Size and Available Slots
-                if (trek.maxParticipants > 0) ...[
+                if (widget.trek.maxParticipants > 0) ...[
                   const Text(
                     'Group Details',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -289,7 +393,7 @@ class TrekDetailScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '${trek.maxParticipants}',
+                              '${widget.trek.maxParticipants}',
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -303,20 +407,39 @@ class TrekDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                 ],
-
-                // Book Button
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00D0B0).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.vibration, color: Color(0xFF00D0B0), size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Tip: Shake your phone to quick book this trek',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF00A68C),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => BookingScreen(trek: trek),
-                        ),
-                      );
-                    },
+                    onPressed: _openBookingScreen,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00D0B0),
                       foregroundColor: Colors.white,

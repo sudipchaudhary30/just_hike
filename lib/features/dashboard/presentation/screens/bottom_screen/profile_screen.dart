@@ -1,11 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:just_hike/core/api/api_endpoints.dart';
 import 'package:just_hike/core/services/storage/user_session_service.dart';
 import 'package:just_hike/features/auth/presentation/pages/login_screen.dart';
 import 'package:just_hike/features/auth/presentation/state/user_auth_state.dart';
 import 'package:just_hike/features/auth/presentation/view_model/user_auth_viewmodel.dart';
+import 'package:just_hike/features/dashboard/presentation/screens/bottom_screen/my_trips_screen.dart';
 import 'package:just_hike/features/editprofile/presentation/pages/editprofile_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -19,8 +21,44 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   int _imageCacheBuster = DateTime.now().millisecondsSinceEpoch;
   String? _lastProfilePicture;
 
+  void _showComingSoon(String title) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$title is coming soon')));
+  }
+
+  Future<void> _logout() async {
+    final userSession = ref.read(UserSessionServiceProvider);
+    await userSession.clearUserSession();
+    const storage = FlutterSecureStorage();
+    await storage.delete(key: 'auth_token');
+    ref.invalidate(authViewmodelProvider);
+
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authViewmodelProvider);
+    final userSession = ref.read(UserSessionServiceProvider);
+    final displayName = authState.authEntity?.fullName.isNotEmpty == true
+        ? authState.authEntity!.fullName
+        : (userSession.getUserFullName() ?? 'User');
+    final displayEmail = authState.authEntity?.email.isNotEmpty == true
+        ? authState.authEntity!.email
+        : (userSession.getUserEmail() ?? 'No email available');
+    final profilePictureRaw =
+        authState.authEntity?.profilePicture ??
+        userSession.getUserProfileImage();
+    final profilePicture = profilePictureRaw?.trim().isNotEmpty == true
+        ? profilePictureRaw!.trim()
+        : null;
+
     ref.listen<AuthState>(authViewmodelProvider, (previous, next) {
       final newPicture = next.authEntity?.profilePicture;
       if (newPicture != null && newPicture != _lastProfilePicture) {
@@ -49,45 +87,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       color: Colors.white,
                     ),
                     child: ClipOval(
-                      child: Consumer(
-                        builder: (context, ref, child) {
-                          final authState = ref.watch(authViewmodelProvider);
-                          final userSession = ref.read(
-                            UserSessionServiceProvider,
-                          );
-                          final profilePicture =
-                              authState.authEntity?.profilePicture ??
-                              userSession.getUserProfileImage();
-
-                          return profilePicture != null
-                              ? CachedNetworkImage(
-                                  key: Key(
-                                    '$profilePicture-$_imageCacheBuster',
+                      child: profilePicture != null
+                          ? CachedNetworkImage(
+                              key: Key('$profilePicture-$_imageCacheBuster'),
+                              imageUrl:
+                                  '${ApiEndpoints.profilePicture(profilePicture)}?v=$_imageCacheBuster',
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF00D0B0),
                                   ),
-                                  imageUrl:
-                                      '${ApiEndpoints.profilePicture(profilePicture)}?v=$_imageCacheBuster',
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => const Center(
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Color(0xFF00D0B0),
-                                      ),
-                                    ),
-                                  ),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(
-                                        Icons.person,
-                                        size: 50,
-                                        color: Color(0xFF00D0B0),
-                                      ),
-                                )
-                              : const Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Color(0xFF00D0B0),
-                                );
-                        },
-                      ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => const Icon(
+                                Icons.person,
+                                size: 50,
+                                color: Color(0xFF00D0B0),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Color(0xFF00D0B0),
+                            ),
                     ),
                   ),
                 ],
@@ -116,13 +139,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           alignment: Alignment.topRight,
                           child: ElevatedButton(
                             onPressed: () {
-                              Navigator.pushAndRemoveUntil(
+                              Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const Editprofile(),
                                 ),
-                                (route) =>
-                                    false, // This removes all previous routes
                               );
                             },
                             style: ElevatedButton.styleFrom(
@@ -147,17 +168,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         const SizedBox(height: 8),
 
                         // Name and Email
-                        const Text(
-                          'Sudip Chaudhary',
-                          style: TextStyle(
+                        Text(
+                          displayName,
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'sudip253@gmail.com',
-                          style: TextStyle(fontSize: 13, color: Colors.grey),
+                        Text(
+                          displayEmail,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
                         ),
 
                         const SizedBox(height: 16),
@@ -187,22 +211,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         _menuItem(
                           icon: Icons.calendar_today_outlined,
                           title: 'My Treks',
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MyTripsScreen(),
+                              ),
+                            );
+                          },
                         ),
                         _menuItem(
                           icon: Icons.payment_outlined,
                           title: 'Payment Methods',
-                          onTap: () {},
+                          onTap: () => _showComingSoon('Payment Methods'),
                         ),
                         _menuItem(
                           icon: Icons.description_outlined,
                           title: 'Travel Documents',
-                          onTap: () {},
+                          onTap: () => _showComingSoon('Travel Documents'),
                         ),
                         _menuItem(
                           icon: Icons.campaign_outlined,
                           title: 'Be a Partner',
-                          onTap: () {},
+                          onTap: () => _showComingSoon('Be a Partner'),
                         ),
 
                         const SizedBox(height: 16),
@@ -220,26 +251,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         _menuItem(
                           icon: Icons.settings_outlined,
                           title: 'Settings',
-                          onTap: () {},
+                          onTap: () => _showComingSoon('Settings'),
                         ),
                         _menuItem(
                           icon: Icons.help_outline,
                           title: 'Support / Help Center',
-                          onTap: () {},
+                          onTap: () => _showComingSoon('Support / Help Center'),
                         ),
                         _menuItem(
                           icon: Icons.logout,
                           title: 'Logout',
-                          onTap: () {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LoginScreen(),
-                              ),
-                              (route) =>
-                                  false, // This removes all previous routes
-                            );
-                          },
+                          onTap: _logout,
                         ),
 
                         const SizedBox(height: 20),
