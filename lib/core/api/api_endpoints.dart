@@ -56,7 +56,7 @@ class ApiEndpoints {
       if (Platform.isAndroid) {
         return path.replaceFirst('http://localhost', 'http://10.0.2.2');
       }
-      return path.replaceFirst('http://localhost', 'http://192.168.1.65');
+      return path.replaceFirst('http://localhost', 'http://$_host');
     }
     if (path.startsWith('http')) return path;
 
@@ -69,7 +69,7 @@ class ApiEndpoints {
     if (!path.startsWith('/')) {
       path = '/$path';
     }
-    return '$mediaServerUrl$path';
+    return '$imageBaseUrl$path';
   }
 
   // Alias for getImageUrl to match your MyTripsScreen usage
@@ -79,7 +79,11 @@ class ApiEndpoints {
 
   // Profile picture URL helper
   static String profilePicture(String filename) {
-    return getImageUrl(filename);
+    if (filename.isEmpty) return '';
+    if (filename.startsWith('http')) return getImageUrl(filename);
+    if (filename.startsWith('/uploads/')) return getImageUrl(filename);
+    if (filename.startsWith('uploads/')) return getImageUrl('/$filename');
+    return getImageUrl('/uploads/$filename');
   }
 
   // Trek image URL helper
