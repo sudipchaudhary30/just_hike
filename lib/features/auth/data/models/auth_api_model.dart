@@ -33,14 +33,39 @@ class AuthApiModel {
 
   //fromJson
   factory AuthApiModel.fromJson(Map<String, dynamic> json) {
+    String? pickString(List<String> keys) {
+      for (final key in keys) {
+        final value = json[key];
+        if (value is String && value.trim().isNotEmpty) {
+          return value;
+        }
+      }
+      return null;
+    }
+
+    final id = pickString(['_id', 'id', 'userAuthId', 'userId']);
+    final fullName =
+        pickString(['name', 'fullName', 'username', 'displayName']) ?? '';
+    final email = pickString(['email']) ?? '';
+    final profilePicture = pickString([
+      'profilePicture',
+      'profileImage',
+      'imageUrl',
+      'image',
+      'avatar',
+      'photo',
+      'thumbnailUrl',
+    ]);
+    final phone = pickString(['phoneNumber', 'phone', 'mobile']);
+
     return AuthApiModel(
-      userAuthId: (json["_id"] ?? json["id"]) as String?,
-      fullName: json["name"] as String,
-      email: json["email"] as String,
+      userAuthId: id,
+      fullName: fullName,
+      email: email,
       password: json["password"] as String?,
-      profilePicture: json["profilePicture"] as String?,
-      phoneNumber: json["phoneNumber"] as String?,
-      token: json["token"] as String?,
+      profilePicture: profilePicture,
+      phoneNumber: phone,
+      token: pickString(['token', 'accessToken']),
     );
   }
 
