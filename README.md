@@ -1,16 +1,2 @@
-# just_hike
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+JustHike
+JustHike Flutter app delivers cross-platform hiking discovery with clean architecture. Riverpod manages state across trek browsing, bookings, and authentication. Local storage strategy: Hive for offline trek data, SharedPreferences for sessions, FlutterSecureStorage for encrypted JWTs (Android Keystore/iOS Keychain). Dio handles API communication with auto token injection. Features offline mode, real-time sync, and outdoor-inspired UI. Built for maintainability with complete separation of presentation, domain, and data layers.
